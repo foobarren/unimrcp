@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NlsRecog>
+	<RuntimeCfgs>
+		<DftTimeoutNoInput>10</DftTimeoutNoInput>
+		<DftTimeoutDetecting>30</DftTimeoutDetecting>
+	</RuntimeCfgs>
+	<AuthInfo>
+		<AccessKeyId></AccessKeyId>
+		<AccessKeySecret></AccessKeySecret>
+	</AuthInfo>
+	<Params>
+		<Url>wss://nls-trans.dataapi.aliyun.com:443/realtime</Url>
+		<AppKey>nls-service-telephone8khz</AppKey>
+		<SampleRate>8000</SampleRate>
+		<VocabId></VocabId>
+		<ResponseMode>streaming</ResponseMode>
+		<Format>pcm</Format>
+		<MaxEndSilence>500</MaxEndSilence>
+	</Params>
+	<ResultFormat>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; standalone=&quot;no&quot;?&gt;&lt;result&gt;&lt;interpretation confidence=&quot;1.0&quot;&gt;&lt;instance&gt;%s&lt;/instance&gt;&lt;input mode=&quot;speech&quot;&gt;%s&lt;/input&gt;&lt;/interpretation&gt;&lt;/result&gt;</ResultFormat>
+</NlsRecog>
+
