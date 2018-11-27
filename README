@@ -4,6 +4,16 @@ INTRODUCTION
 UniMRCP is an open source project compliant with the IETF RFC6787 (MRCPv2) and RFC4463 (MRCPv1)
 specifications.
 
+This project fork from UniMRCP, plan to add some plugin, only test in linux 
+add aliyun nls 1.3.4 plugin
+add xfyun asr tts plugin
+add baidu asr plugin
+
+add private multiple-mode in MRCPv2 for long time runtime asr . the freeswitch mod_mrcp need patch.
+
+Welcome to communication technology,please remark ASR or TTS or MRCP
+    my weixin: foobarren 
+    my qq: 20226606
 
 INSTALLATION
 ============
