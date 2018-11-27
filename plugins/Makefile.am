@@ -2,6 +2,14 @@ MAINTAINERCLEANFILES   = Makefile.in
 
 SUBDIRS                =
 
+if NLSSYNTH_PLUGIN
+SUBDIRS               += nls-synth
+endif
+
+if NLSRECOG_PLUGIN
+SUBDIRS               += nls-recog
+endif
+
 if DEMOSYNTH_PLUGIN
 SUBDIRS               += demo-synth
 endif

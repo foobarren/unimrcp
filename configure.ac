@@ -170,6 +170,16 @@ AC_ARG_ENABLE(server-app,
 
 AM_CONDITIONAL([UNIMRCP_SERVER_APP],[test "${enable_server_lib}" = "yes" && test "${enable_server_app}" = "yes"])
 
+dnl Nls synthesizer plugin.
+UNI_PLUGIN_ENABLED(nlssynth)
+
+AM_CONDITIONAL([NLSSYNTH_PLUGIN],[test "${enable_nlssynth_plugin}" = "yes"])
+
+dnl Nls recognizer plugin.
+UNI_PLUGIN_ENABLED(nlsrecog)
+
+AM_CONDITIONAL([NLSRECOG_PLUGIN],[test "${enable_nlsrecog_plugin}" = "yes"])
+
 dnl Demo synthesizer plugin.
 UNI_PLUGIN_ENABLED(demosynth)
 
@@ -216,6 +226,8 @@ AC_CONFIG_FILES([
     modules/mrcp-sofiasip/Makefile
     modules/mrcp-unirtsp/Makefile
     plugins/Makefile
+    plugins/nls-synth/Makefile
+    plugins/nls-recog/Makefile
     plugins/mrcp-recorder/Makefile
     plugins/demo-synth/Makefile
     plugins/demo-recog/Makefile
@@ -268,6 +280,8 @@ echo
 echo UniMRCP server lib............ : $enable_server_lib
 echo UniMRCP server app............ : $enable_server_app
 echo
+echo Nls synthesizer plugin........ : $enable_nlssynth_plugin
+echo Nls recognizer plugin......... : $enable_nlsrecog_plugin
 echo Demo synthesizer plugin....... : $enable_demosynth_plugin
 echo Demo recognizer plugin........ : $enable_demorecog_plugin
 echo Demo verifier plugin.......... : $enable_demoverifier_plugin
