@@ -36,7 +36,9 @@ Prerequisites:
 	libtool 1.4 or newer
 	gcc
 	pkg-config
+    unimrcp-deps 
 
+set env DEPS_HOME={unimrcp-deps path}
 
 Procedure:
 

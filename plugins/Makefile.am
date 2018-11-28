@@ -2,6 +2,14 @@ MAINTAINERCLEANFILES   = Makefile.in
 
 SUBDIRS                =
 
+if XFYUNSYNTH_PLUGIN
+SUBDIRS               += xfyun-synth
+endif
+
+if XFYUNRECOG_PLUGIN
+SUBDIRS               += xfyun-recog
+endif
+
 if NLSSYNTH_PLUGIN
 SUBDIRS               += nls-synth
 endif
