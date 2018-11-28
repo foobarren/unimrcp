@@ -1,13 +1,14 @@
 AM_CPPFLAGS                = -I./include \
-				-I$(DEV_HOME)/NlsSpeechSdk-Release-1.3.4/include \
+				-I$(DEPS_HOME)/NlsSpeechSdk-Release-1.3.4/include \
 				$(UNIMRCP_PLUGIN_INCLUDES)
 
 plugin_LTLIBRARIES         = nlsrecog.la
 
 nlsrecog_la_SOURCES       = src/nls_recog_engine.cpp \
-				src/nls_asr.cpp
+				src/nls_asr.cpp \
+				src/tinyxml2.cpp
 nlsrecog_la_LDFLAGS       = $(UNIMRCP_PLUGIN_OPTS) \
-				-L$(DEV_HOME)/NlsSpeechSdk-Release-1.3.4/lib/linux -ltinyxml2 -lrealTimeUnity -lssl -lcrypto -lopus -lm -ldl -lz
+				-L$(DEPS_HOME)/NlsSpeechSdk-Release-1.3.4/lib/linux -lrealTimeUnity -lssl -lcrypto -lopus -lm -ldl -lz
 
 install-data-local:
 	test -d $(DESTDIR)$(sysconfdir) || $(MAKE) def-conf

@@ -5,9 +5,10 @@ AM_CPPFLAGS                = -I./include \
 plugin_LTLIBRARIES         = nlssynth.la
 
 nlssynth_la_SOURCES       = src/nls_synth_engine.cpp \
-				src/nls_tts.cpp
+				src/nls_tts.cpp \
+				src/tinyxml2.cpp
 nlssynth_la_LDFLAGS       = $(UNIMRCP_PLUGIN_OPTS) \
-				-L$(DEPS_HOME)/NlsSpeechSdk-Release-1.3.4/lib/linux -ltinyxml2 -lrealTimeUnity -lssl -lcrypto -lopus -lm -ldl -lz
+				-L$(DEPS_HOME)/NlsSpeechSdk-Release-1.3.4/lib/linux -lrealTimeUnity -lssl -lcrypto -lopus -lm -ldl -lz
 
 install-data-local:
 	test -d $(DESTDIR)$(sysconfdir) || $(MAKE) def-conf
