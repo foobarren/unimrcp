@@ -113,6 +113,12 @@
     <plugin-factory>
       <engine id="Demo-Synth-1" name="demosynth" enable="true"/>
       <engine id="Demo-Recog-1" name="demorecog" enable="true"/>
+      <engine id="Nls-Synth-1" name="nlssynth" enable="false"/>
+      <engine id="Nls-Recog-1" name="nlsrecog" enable="false"/>
+      <engine id="xfyun-Synth-1" name="xfyunsynth" enable="false"/>
+      <engine id="xfyun-Recog-1" name="xfyunrecog" enable="false"/>
+      <engine id="Demo-Synth-1" name="demosynth" enable="true"/>
+      <engine id="Demo-Recog-1" name="demorecog" enable="true"/>
       <engine id="Demo-Verifier-1" name="demoverifier" enable="true"/>
       <engine id="Recorder-1" name="mrcprecorder" enable="true"/>
 
