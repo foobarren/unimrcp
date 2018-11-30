@@ -4,6 +4,8 @@
 #include "tinyxml2.h"
 using namespace tinyxml2;
 using AlibabaNls::NlsClient;
+using std::string;
+
 extern apt_log_source_t *SYNTH_PLUGIN;
 
 /** Use custom log source mark */
@@ -319,7 +321,7 @@ namespace Nls2TTS
 			 */
 			std::time_t curTime = std::time(0);
 			if (g_lExireTime - curTime < 10) {
-				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
+				apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,
 				"the token will be expired, please generate new token by AccessKey-ID and AccessKey-Secret." 
 				);
 				if (-1 == generateToken(g_strDftAccessKeyId, g_strDftAccessKeySecret, &g_strToken, &g_lExireTime)) {
@@ -331,7 +333,7 @@ namespace Nls2TTS
 			this->m_pNlsCB	=	new SpeechSynthesizerCallback();
 			if (this->m_pNlsCB == NULL)
 			{
-				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
+				apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,
 					"TTSSession::Start() failed on new SpeechSynthesizerCallback()!!!"
 					);
 
@@ -348,7 +350,7 @@ namespace Nls2TTS
 			this->m_pNlsReq	=	NlsClient::getInstance()->createSynthesizerRequest(this->m_pNlsCB);
 			if (this->m_pNlsReq == NULL)
 			{
-				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
+				apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,
 					"TTSSession::Start() failed on g_pNlsClient->createTranscriberRequest!!!"
 					);
 
@@ -371,14 +373,14 @@ namespace Nls2TTS
 			* 3: start()为阻塞操作, 发送start指令之后, 会等待服务端响应, 或超时之后才返回
 			*/
 			if (this->m_pNlsReq->start() < 0) {
-				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
+				apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,
 					"TTSSession::Start() failed!!!"
 					);
 				nRet	=	-1;
 				break;
 			}
 
-			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,
+			apt_log(SYNTH_LOG_MARK,APT_PRIO_INFO,
 				"TTSSession::Start() successfully."
 				);
 
@@ -411,10 +413,10 @@ namespace Nls2TTS
 			this->m_pNlsCB	=	NULL;
 		}
 
-		apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,
+		apt_log(SYNTH_LOG_MARK,APT_PRIO_INFO,
 			"TTSSession::Stop() invoked."
 			);
 
 		return 0;
 	}
-};
+}; //namespace Nls2
