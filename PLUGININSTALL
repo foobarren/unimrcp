@@ -1,12 +1,16 @@
 Get SDK from  https://github.com/foobarren/unimrcp-deps.git
 
 aliyun NlsSpeechSDK1.3.4
-    default copy linux sdk lib
-    cp NlsSpeechSdk-Release-1.3.4/lib/linux/* /usr/local/unimrcp/lib/
+    make install default copy linux sdk lib
+        cp NlsSpeechSdk-Release-1.3.4/lib/linux/* /usr/local/unimrcp/lib/
 
 xfyun SDK :
-    only support short time realtime asr, 60second <
-    need self SDK replace xfyun SDK,default copy x64 linux sdk lib
-    cp xfyun/libs/x64/libmsc.so /usr/local/unimrcp/lib/
+    only support short time (60second <) realtime asr
+    need modify xfyun-recog/src/xfyun_recog_engine.c :153 line  ,change appid value use youself 
+    need self SDK replace xfyun SDK,make install default copy x64 linux sdk lib
+        cp xfyun/libs/x64/libmsc.so /usr/local/unimrcp/lib/
+
+    2018.11 new sdk libmsc.so has some bug ,when unimrcpserver start : 
+        Load Plugin [xfyunsynth-1] [/usr/local/unimrcp/plugin/xfyunsynth.so] Failed to Load DSO: /usr/local/unimrcp/lib/libmsc.so: undefined symbol: _ZTVN10__cxxabiv117__class_type_infoE
 
     
