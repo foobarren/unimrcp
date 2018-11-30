@@ -725,7 +725,7 @@ static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
 		{ // 识别结果发生了变化, 当前句子的中间识别结果
 			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onTranscriptionResultChanged, event(\"speech-detected\") should be emitted " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-			nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
+			// nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
 			break;
 		}
 	case NlsEvent::TranscriptionCompleted:

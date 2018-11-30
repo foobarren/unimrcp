@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NlsSynth>
+	<AuthInfo>
+		<AccessKeyId></AccessKeyId>
+		<AccessKeySecret></AccessKeySecret>
+	</AuthInfo>
+	<Params>
+		<!--该值设置无效-->
+		<Url>wss://nls.dataapi.aliyun.com:443</Url>
+		<AppKey>nls-service</AppKey>
+		<!--包含8000, 16000.可选参数, 默认是16000-->
+		<TtsSampleRate>8000</TtsSampleRate>
+		<!--语速 范围是-500~500, 可选参数, 默认是0-->
+		<TtsSpeechRate>0</TtsSpeechRate>
+		<!--默认是pcm. 支持的格式pcm, wav, mp3-->
+		<TtsFormat>pcm</TtsFormat>
+		<!--范围是0~100, 可选参数, 默认50-->
+		<TtsVolume>50</TtsVolume>
+		<!--0 统计参数合成 1 波形拼接合成, 默认是0-->
+		<TtsMethod>0</TtsMethod>
+		<!--包含"xiaoyun", "xiaogang". 可选参数, 默认是xiaoyun-->
+		<TtsVoice>xiaoyun</TtsVoice>
+		<!--语调 范围是-500~500, 可选参数, 默认是0-->
+		<TtsPitchRate>0</TtsPitchRate>
+		<!--设置Socket接收超时时间-->
+		<TtsTimeout>0</TtsTimeout>
+	</Params>
+</NlsSynth>
+

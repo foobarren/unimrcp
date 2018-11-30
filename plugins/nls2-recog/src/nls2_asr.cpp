@@ -180,65 +180,6 @@ int32_t	CloseASRSession(ASRSession* pSession,bool bNeedStop)
 	return 0;
 }
 
-// 	// tool functions
-// bool	IsZSTR(const char* pstr)
-// {
-// 	if (pstr == NULL)
-// 	{
-// 		return true;
-// 	}
-
-// 	if (strlen(pstr) == 0)
-// 	{
-// 		return true;
-// 	}
-
-// 	return false;
-// }
-
-// std::string&	StrReplace(std::string& strFull, const std::string& substrOld, const std::string& substrNew)
-// {
-// 	if (strFull.empty() || substrOld.empty())
-// 	{
-// 		return strFull;
-// 	}
-
-// 	std::string::size_type	lenSubstrOld	=	substrOld.length();
-
-// 	std::string::size_type	posToReplace	=	strFull.find(substrOld);
-// 	while (posToReplace != std::string::npos)
-// 	{
-// 		strFull.replace(posToReplace, lenSubstrOld, substrNew);
-
-// 		posToReplace	=	strFull.find(substrOld);
-// 	}
-
-// 	return strFull;
-// }
-
-// std::string&	StrXMLEscape(std::string& strXML)
-// {
-// 	StrReplace(strXML, "<", "&lt;");
-// 	StrReplace(strXML, ">", "&gt;");
-// 	StrReplace(strXML, "\"", "&quot;");
-// 	StrReplace(strXML, "&", "&amp;");
-// 	StrReplace(strXML, " ", "&nbsp;");
-
-// 	return strXML;
-// }
-
-// std::string&	StrXMLUnescape(std::string& strXML)
-// {
-// 	StrReplace(strXML, "&lt;", "<");
-// 	StrReplace(strXML, "&gt;", ">");
-// 	StrReplace(strXML, "&quot;", "\"");
-// 	StrReplace(strXML, "&amp;", "&");
-// 	StrReplace(strXML, "&nbsp;", " ");
-
-// 	return strXML;
-// }
-
-
 /**
  * 根据AccessKey ID和AccessKey Secret重新生成一个token，并获取其有效期时间戳
  */
