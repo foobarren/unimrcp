@@ -36,9 +36,11 @@
 #include "mrcp_synth_engine.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
+#include "apr_file_info.h"
 #include "mpf_buffer.h"
 
 #define SYNTH_ENGINE_TASK_NAME "Nls2 Synth Engine"
+#define SYNTH_ENGINE_CONF_FILE_NAME "nls2synth.xml"
 
 typedef struct nls2_synth_engine_t nls2_synth_engine_t;
 typedef struct nls2_synth_channel_t nls2_synth_channel_t;
@@ -148,7 +150,7 @@ MRCP_PLUGIN_VERSION_DECLARE
 MRCP_PLUGIN_LOG_SOURCE_IMPLEMENT(SYNTH_PLUGIN,"SYNTH-PLUGIN")
 
 /** Use custom log source mark */
-#define SYNTH_LOG_MARK   SYNTH_LOG_MARK_DECLARE(SYNTH_PLUGIN)
+#define SYNTH_LOG_MARK   APT_LOG_MARK_DECLARE(SYNTH_PLUGIN)
 
 /** Create xfyun synthesizer engine */
 MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
@@ -387,8 +389,8 @@ static apt_bool_t nls2_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 	mrcp_engine_channel_message_send(channel,response);
 
 	synth_channel->tts_session	=	Nls2TTS::OpenSession();
-
-	if (synth_channel->tts_session->Start(body->buf),&synth_channel->cbParam) != 0)
+	int32_t ret = synth_channel->tts_session->Start(body->buf),&synth_channel->cbParam);
+	if ( ret != 0)
 	{
 		apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,
 			"NlsTTS::Text2Audio(%s) failed!!! " APT_SIDRES_FMT,
@@ -407,7 +409,7 @@ static apt_bool_t nls2_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 static APR_INLINE nls2_synth_channel_t* nls2_synth_channel_get(apt_task_t *task)
 {
 	apt_consumer_task_t *consumer_task = (apt_consumer_task_t*)apt_task_object_get(task);
-	return apt_consumer_task_object_get(consumer_task);
+	return (nls2_synth_channel_t*)apt_consumer_task_object_get(consumer_task);
 }
 
 static void nls2_synth_on_start(apt_task_t *task)
@@ -458,7 +460,7 @@ static apt_bool_t nls2_synth_channel_set_params(mrcp_engine_channel_t *channel, 
 {
 	mrcp_synth_header_t *req_synth_header;
 	/* get synthesizer header */
-	req_synth_header = mrcp_resource_header_get(request);
+	req_synth_header = (mrcp_synth_header_t*)mrcp_resource_header_get(request);
 	if(req_synth_header) {
 		/* check voice age header */
 		if(mrcp_resource_header_property_check(request,SYNTHESIZER_HEADER_VOICE_AGE) == TRUE) {
@@ -714,3 +716,4 @@ static int32_t	nls2_synth_on_nls2tts_notify(NlsEvent* cbEvent, void* pvContext)
 			break;
 		}
 	}
+}
