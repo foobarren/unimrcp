@@ -389,7 +389,7 @@ static apt_bool_t nls2_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 	mrcp_engine_channel_message_send(channel,response);
 
 	synth_channel->tts_session	=	Nls2TTS::OpenSession();
-	int32_t ret = synth_channel->tts_session->Start(body->buf),&synth_channel->cbParam);
+	int32_t ret = synth_channel->tts_session->Start(body->buf,&synth_channel->cbParam);
 	if ( ret != 0)
 	{
 		apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,
@@ -484,9 +484,9 @@ static apt_bool_t nls2_synth_channel_get_params(mrcp_engine_channel_t *channel, 
 {
 	mrcp_synth_header_t *req_synth_header;
 	/* get synthesizer header */
-	req_synth_header = mrcp_resource_header_get(request);
+	req_synth_header = (mrcp_synth_header_t*)mrcp_resource_header_get(request);
 	if(req_synth_header) {
-		mrcp_synth_header_t *res_synth_header = mrcp_resource_header_prepare(response);
+		mrcp_synth_header_t *res_synth_header = (mrcp_synth_header_t*)mrcp_resource_header_prepare(response);
 		/* check voice age header */
 		if(mrcp_resource_header_property_check(request,SYNTHESIZER_HEADER_VOICE_AGE) == TRUE) {
 			res_synth_header->voice_param.age = 25;
@@ -601,7 +601,7 @@ static apt_bool_t nls2_synth_speak_complete_raise(nls2_synth_channel_t *synth_ch
 static apt_bool_t nls2_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
 	// apt_log(SYNTH_LOG_MARK, APT_PRIO_INFO, "[xfyun tts] stream read");
-	nls2_synth_channel_t *synth_channel = stream->obj;
+	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t *)stream->obj;
 	/* check if STOP was requested */
 	if(synth_channel->stop_response) {
 		/* send asynchronous response to STOP request */
@@ -629,7 +629,7 @@ static apt_bool_t nls2_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t
 static apt_bool_t nls2_synth_msg_signal(nls2_synth_msg_type_e type, mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
 	apt_bool_t status = FALSE;
-	nls2_synth_channel_t *nls2_channel = channel->method_obj;
+	nls2_synth_channel_t *nls2_channel = (nls2_synth_channel_t *)channel->method_obj;
 	nls2_synth_engine_t *nls2_engine = nls2_channel->nls2_engine;
 	apt_task_t *task = apt_consumer_task_base_get(nls2_engine->task);
 	apt_task_msg_t *msg = apt_task_msg_get(task);
