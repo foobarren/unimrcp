@@ -30,7 +30,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-
+#include <vector>
 #include "nls2_tts.h"
 
 #include "mrcp_synth_engine.h"
@@ -148,7 +148,7 @@ MRCP_PLUGIN_VERSION_DECLARE
 MRCP_PLUGIN_LOG_SOURCE_IMPLEMENT(SYNTH_PLUGIN,"SYNTH-PLUGIN")
 
 /** Use custom log source mark */
-#define SYNTH_LOG_MARK   APT_LOG_MARK_DECLARE(SYNTH_PLUGIN)
+#define SYNTH_LOG_MARK   SYNTH_LOG_MARK_DECLARE(SYNTH_PLUGIN)
 
 /** Create xfyun synthesizer engine */
 MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
@@ -202,9 +202,21 @@ static apt_bool_t nls2_synth_engine_open(mrcp_engine_t *engine)
 		apt_task_t *task = apt_consumer_task_base_get(nls2_engine->task);
 		apt_task_start(task);
 	}
+	const apt_dir_layout_t *dir_layout = engine->dir_layout;
+	const char* dir_path_conf = apt_dir_layout_path_get(dir_layout, APT_LAYOUT_CONF_DIR);
+	char* file_path_conf = NULL;
+	if (apr_filepath_merge(&file_path_conf, dir_path_conf, SYNTH_ENGINE_CONF_FILE_NAME, APR_FILEPATH_NATIVE, engine->pool) != APR_SUCCESS)
+	{
+		apt_log(SYNTH_LOG_MARK,APT_PRIO_ERROR,
+			"Get file path for %s failed!!!",
+			SYNTH_ENGINE_CONF_FILE_NAME
+			);
+		return FALSE;
+	}
+
 	if (Nls2TTS::GlobalInit(file_path_conf) != 0)
 	{
-		apt_log(RECOG_LOG_MARK,APT_PRIO_ERROR,
+		apt_log(SYNTH_LOG_MARK,APT_PRIO_ERROR,
 			"Nls2TTS::GlobalInit(%s) failed!!!",
 			file_path_conf
 			);
@@ -222,7 +234,7 @@ static apt_bool_t nls2_synth_engine_close(mrcp_engine_t *engine)
 		apt_task_terminate(task,TRUE);
 	}
 	Nls2TTS::GlobalFini();
-	apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,
+	apt_log(SYNTH_LOG_MARK,APT_PRIO_INFO,
 		"Nls2TTS::GlobalFini() successfully."
 		);
 
@@ -232,13 +244,13 @@ static apt_bool_t nls2_synth_engine_close(mrcp_engine_t *engine)
 /** Create xfyun synthesizer channel derived from engine channel base */
 static mrcp_engine_channel_t* nls2_synth_engine_channel_create(mrcp_engine_t *engine, apr_pool_t *pool)
 {
-	apt_log(APT_LOG_MARK, APT_PRIO_INFO, "[xfyun tts] create synthesizer channel");
+	apt_log(SYNTH_LOG_MARK, APT_PRIO_INFO, "[xfyun tts] create synthesizer channel");
 	mpf_stream_capabilities_t *capabilities;
 	mpf_termination_t *termination; 
 
 	/* create xfyun synth channel */
 	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t*)apr_palloc(pool,sizeof(nls2_synth_channel_t));
-	synth_channel->nls2_engine = (nls2_synth_engine_t*)eengine->obj;
+	synth_channel->nls2_engine = (nls2_synth_engine_t*)engine->obj;
 	synth_channel->speak_request = NULL;
 	synth_channel->stop_response = NULL;
 	synth_channel->time_to_complete = 0;
@@ -347,7 +359,7 @@ static apt_bool_t nls2_synth_notify_completed(nls2_synth_channel_t* synth_channe
 /** Process SPEAK request */
 static apt_bool_t nls2_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	apt_log(APT_LOG_MARK, APT_PRIO_INFO, "[xfyun tts] process speak request");
+	apt_log(SYNTH_LOG_MARK, APT_PRIO_INFO, "[xfyun tts] process speak request");
 	apt_str_t *body;
 	const char* session_begin_params = "voice_name = xiaoyan, text_encoding = utf8, sample_rate = 8000, speed = 50, volume = 50, pitch = 50, rdn = 2";
 	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t*)channel->method_obj;
@@ -376,11 +388,11 @@ static apt_bool_t nls2_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 
 	synth_channel->tts_session	=	Nls2TTS::OpenSession();
 
-	if (synth_channel->tts_session->Start(text->buf),&synth_channel->cbParam) != 0)
+	if (synth_channel->tts_session->Start(body->buf),&synth_channel->cbParam) != 0)
 	{
 		apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,
 			"NlsTTS::Text2Audio(%s) failed!!! " APT_SIDRES_FMT,
-			text->buf,
+			body->buf,
 			MRCP_MESSAGE_SIDRES(request)
 			);
 		Nls2TTS::CloseSession(synth_channel->tts_session,false);
@@ -394,28 +406,28 @@ static apt_bool_t nls2_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 
 static APR_INLINE nls2_synth_channel_t* nls2_synth_channel_get(apt_task_t *task)
 {
-	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	apt_consumer_task_t *consumer_task = (apt_consumer_task_t*)apt_task_object_get(task);
 	return apt_consumer_task_object_get(consumer_task);
 }
 
 static void nls2_synth_on_start(apt_task_t *task)
 {
-	nls2_synth_channel_t *synth_channel = nls2_synth_channel_get(task);
-	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "Speak task started"); 
+	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t*)nls2_synth_channel_get(task);
+	apt_log(SYNTH_LOG_MARK, APT_PRIO_DEBUG, "Speak task started"); 
 	mrcp_engine_channel_open_respond(synth_channel->channel,TRUE);
 }
 
 static void nls2_synth_on_terminate(apt_task_t *task)
 {
-	nls2_synth_channel_t *synth_channel = nls2_synth_channel_get(task);
-	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "Speak task terminated");
+	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t*)nls2_synth_channel_get(task);
+	apt_log(SYNTH_LOG_MARK, APT_PRIO_DEBUG, "Speak task terminated");
 	mrcp_engine_channel_close_respond(synth_channel->channel);
 }
 
 /** Process STOP request */
 static apt_bool_t nls2_synth_channel_stop(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	nls2_synth_channel_t *synth_channel = channel->method_obj;
+	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t*)channel->method_obj;
 	/* store the request, make sure there is no more activity and only then send the response */
 	synth_channel->stop_response = response;
 	return TRUE;
@@ -424,7 +436,7 @@ static apt_bool_t nls2_synth_channel_stop(mrcp_engine_channel_t *channel, mrcp_m
 /** Process PAUSE request */
 static apt_bool_t nls2_synth_channel_pause(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	nls2_synth_channel_t *synth_channel = channel->method_obj;
+	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t*)channel->method_obj;
 	synth_channel->paused = TRUE;
 	/* send asynchronous response */
 	mrcp_engine_channel_message_send(channel,response);
@@ -434,7 +446,7 @@ static apt_bool_t nls2_synth_channel_pause(mrcp_engine_channel_t *channel, mrcp_
 /** Process RESUME request */
 static apt_bool_t nls2_synth_channel_resume(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	nls2_synth_channel_t *synth_channel = channel->method_obj;
+	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t*)channel->method_obj;
 	synth_channel->paused = FALSE;
 	/* send asynchronous response */
 	mrcp_engine_channel_message_send(channel,response);
@@ -554,7 +566,7 @@ static apt_bool_t nls2_synth_speak_complete_raise(nls2_synth_channel_t *synth_ch
 {
 	mrcp_message_t *message = 0;
 	mrcp_synth_header_t * synth_header = 0;
-	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "[nls2 tts] nls2_synth_speak_complete_raise");
+	apt_log(SYNTH_LOG_MARK, APT_PRIO_DEBUG, "[nls2 tts] nls2_synth_speak_complete_raise");
 
 	if (!synth_channel->speak_request) {
 		return FALSE;
@@ -586,7 +598,7 @@ static apt_bool_t nls2_synth_speak_complete_raise(nls2_synth_channel_t *synth_ch
 /** Callback is called from MPF engine context to read/get new frame */
 static apt_bool_t nls2_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
-	// apt_log(APT_LOG_MARK, APT_PRIO_INFO, "[xfyun tts] stream read");
+	// apt_log(SYNTH_LOG_MARK, APT_PRIO_INFO, "[xfyun tts] stream read");
 	nls2_synth_channel_t *synth_channel = stream->obj;
 	/* check if STOP was requested */
 	if(synth_channel->stop_response) {
@@ -600,7 +612,7 @@ static apt_bool_t nls2_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t
 
 	/* check if there is active SPEAK request and it isn't in paused state */
 	if(synth_channel->speak_request && synth_channel->paused == FALSE) {
-		// apt_log(APT_LOG_MARK, APT_PRIO_INFO, "[xfyun tts] read audio buffer to frame");
+		// apt_log(SYNTH_LOG_MARK, APT_PRIO_INFO, "[xfyun tts] read audio buffer to frame");
 		/* normal processing */
 		mpf_buffer_frame_read(synth_channel->audio_buffer,frame);
 			/* raise SPEAK-COMPLETE event */
@@ -662,22 +674,22 @@ static int32_t	nls2_synth_on_nls2tts_notify(NlsEvent* cbEvent, void* pvContext)
 	{
 	case NlsEvent::Binary:
 		{ // 收到数据
-			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"on Binary, event(\"begin-speaking\") should be emitted " APT_SIDRES_FMT,
+			apt_log(SYNTH_LOG_MARK,APT_PRIO_INFO,"on Binary, event(\"begin-speaking\") should be emitted " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(synth_channel->speak_request));
-			vector<unsigned char> data = cbEvent->getBinaryData(); // getBinaryData() 获取文本合成的二进制音频数据
+			std::vector<unsigned char> data = cbEvent->getBinaryData(); // getBinaryData() 获取文本合成的二进制音频数据
  			mpf_buffer_audio_write(synth_channel->audio_buffer, (char*)&data[0], data.size());
 			break;
 		}
 	case NlsEvent::SynthesisStarted:
 		{ // 开始
-			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"on SynthesisStarted, event(\"speech-detected\") should be emitted " APT_SIDRES_FMT,
+			apt_log(SYNTH_LOG_MARK,APT_PRIO_INFO,"on SynthesisStarted, event(\"speech-detected\") should be emitted " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(synth_channel->speak_request));
 			// nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
 			break;
 		}
 	case NlsEvent::SynthesisCompleted:
 		{//完成
-			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"on SynthesisCompleted " APT_SIDRES_FMT,
+			apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,"on SynthesisCompleted " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(synth_channel->speak_request));
 			mpf_buffer_event_write(synth_channel->audio_buffer, MEDIA_FRAME_TYPE_EVENT);
 			// nls2_synth_notify_completed(synth_channel,SYNTHESIZER_COMPLETION_CAUSE_NORMAL);
@@ -685,14 +697,14 @@ static int32_t	nls2_synth_on_nls2tts_notify(NlsEvent* cbEvent, void* pvContext)
 		}
 	case NlsEvent::TaskFailed:
 		{//识别过程(包含start(), send(), stop())发生异常时
-			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onTaskFailed " APT_SIDRES_FMT,
+			apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,"onTaskFailed " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(synth_channel->speak_request));
 			nls2_synth_notify_completed(synth_channel,SYNTHESIZER_COMPLETION_CAUSE_ERROR);
 			break;
 		}
 	case NlsEvent::Close:
 		{///*语音功能通道连接关闭*/
-			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onClose " APT_SIDRES_FMT,
+			apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,"onClose " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(synth_channel->speak_request));
 			nls2_synth_notify_completed(synth_channel,SYNTHESIZER_COMPLETION_CAUSE_ERROR);
 			break;
