@@ -1,7 +1,11 @@
-
+#include <ctime>
+#include <iostream>
 #include "nls2_asr.h"
 
 #include "tinyxml2.h"
+
+using std::cout;
+using std::endl;
 using namespace tinyxml2;
 using AlibabaNls::NlsClient;
 
@@ -408,7 +412,7 @@ void onTaskFailed(NlsEvent* cbEvent, void* cbParam) {
     * @param cbParam 回调自定义参数，默认为NULL, 可以根据需求自定义参数
     * @return
 */
-void onChannelClosed(NlsEvent* cbEvent, void* pContext) {
+void onChannelClosed(NlsEvent* cbEvent, void* cbParam) {
 	cout << "OnChannelCloseed: All response: " << cbEvent->getAllResponse() << endl; // getResponse() 可以通道关闭信息
 	ParamCallBack*	pSession	=	(ParamCallBack*)cbParam;
 	pSession->pfnOnNotify(cbEvent,pSession->pContext);
@@ -483,7 +487,6 @@ int32_t	ASRSession::Start(void* pContext)
 		this->m_pNlsReq->setSemanticSentenceDetection(false); // 设置是否语义断句, 可选参数. 默认false
 		this->m_pNlsReq->setMaxSentenceSilence(g_iMaxSentenceSilence);
 		this->m_pNlsReq->setToken(g_strToken.c_str()); // 设置账号校验token, 必填参数
-		this->m_strAsrResult.clear();
 		/*
 		* 3: start()为阻塞操作, 发送start指令之后, 会等待服务端响应, 或超时之后才返回
 		*/
@@ -495,7 +498,6 @@ int32_t	ASRSession::Start(void* pContext)
 			break;
 		}
 
-		this->m_eAsrStatus	=	E_AsrStatus_Feeding;
 		apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,
 			"ASRSession::Start() successfully."
 			);
@@ -516,7 +518,7 @@ int32_t	ASRSession::Stop(bool bNeedStop)
 	{
 		if (bNeedStop)
 		{
-			this->m_pNlsReq->Stop();
+			this->m_pNlsReq->stop();
 		}
 
 		g_pNlsClient->releaseTranscriberRequest(this->m_pNlsReq);
@@ -547,7 +549,7 @@ int32_t	ASRSession::FeedAudioData(const void* pvAudioData, uint32_t lenAudioData
 		return -1;
 	}
 
-	return this->m_pNlsReq->SendAudio((char*)pvAudioData, lenAudioData) ;
+	return this->m_pNlsReq->sendAudio((char*)pvAudioData, lenAudioData) ;
 }
 
 // int32_t	ASRSession::OnNotify(void* pvContext, ET_AsrStatus eStatus, const std::string& strResult)

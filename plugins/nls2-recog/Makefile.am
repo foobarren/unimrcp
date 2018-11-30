@@ -5,10 +5,10 @@ AM_CPPFLAGS                = -I./include \
 plugin_LTLIBRARIES         = nls2recog.la
 
 nls2recog_la_SOURCES       = src/nls2_recog_engine.cpp \
-				src/nls_asr.cpp \
+				src/nls2_asr.cpp \
 				src/tinyxml2.cpp
 nls2recog_la_LDFLAGS       = $(UNIMRCP_PLUGIN_OPTS) \
-				-L$(DEPS_HOME)/NlsSdkCpp2.0/lib/linux -lrealTimeUnity -lssl -lcrypto -lopus
+				-L$(DEPS_HOME)/NlsSdkCpp2.0/lib/linux -lnlsCppSdk -lnlsCommonSdk 
 
 install-data-local:
 	test -d $(DESTDIR)$(sysconfdir) || $(MAKE) def-conf

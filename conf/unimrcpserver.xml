@@ -115,6 +115,8 @@
       <engine id="Demo-Recog-1" name="demorecog" enable="true"/>
       <engine id="Nls-Synth-1" name="nlssynth" enable="false"/>
       <engine id="Nls-Recog-1" name="nlsrecog" enable="false"/>
+      <engine id="Nls2-Synth-1" name="nls2synth" enable="false"/>
+      <engine id="Nls2-Recog-1" name="nls2recog" enable="false"/>
       <engine id="xfyun-Synth-1" name="xfyunsynth" enable="false"/>
       <engine id="xfyun-Recog-1" name="xfyunrecog" enable="false"/>
       <engine id="Demo-Synth-1" name="demosynth" enable="true"/>

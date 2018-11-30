@@ -113,7 +113,7 @@ struct nls2_recog_channel_t {
 	FILE                    *audio_out;
 
 	Nls2ASR::ASRSession	*asr_session; //Nls2::ASRSession
-	ParamCallBack		cbParam;
+	Nls2ASR::ParamCallBack		cbParam;
 };
 
 enum nls2_recog_event_et
@@ -384,7 +384,7 @@ static apt_bool_t nls2_recog_channel_stop(mrcp_engine_channel_t *channel, mrcp_m
 	{
 		if (recog_channel->asr_session != NULL)
 		{
-			Nls2ASR::CloseSession(recog_channel->asr_session,recog_channel->timers_started);
+			Nls2ASR::CloseASRSession(recog_channel->asr_session,recog_channel->timers_started);
 			recog_channel->asr_session = NULL;
 		}
 
@@ -498,7 +498,7 @@ static apt_bool_t nls2_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 		{
 			if(recog_channel->asr_session->FeedAudioData(frame->codec_frame.buffer, frame->codec_frame.size)==-1)
 			{
-				Nls2ASR::CloseSession(recog_channel->asr_session,recog_channel->timers_started);
+				Nls2ASR::CloseASRSession(recog_channel->asr_session,recog_channel->timers_started);
 				recog_channel->asr_session = NULL;
 				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"nls2_recog_stream_write() FeedAudioData Failed,asrserver disconnected!");
 				return TRUE;
@@ -700,7 +700,7 @@ static apt_bool_t nls2_recog_recognition_complete(nls2_recog_channel_t *recog_ch
 	message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
 
 	if(cause == RECOGNIZER_COMPLETION_CAUSE_SUCCESS) {
-		nls2_recog_result_load(recog_channel,message);
+		nls2_recog_result_load(recog_channel,message,cbEvent);
 	}
 
 	recog_channel->recog_request = NULL;
@@ -725,14 +725,14 @@ static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
 		{ // 识别结果发生了变化, 当前句子的中间识别结果
 			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onTranscriptionResultChanged, event(\"speech-detected\") should be emitted " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-			nls2_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
+			nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
 			break;
 		}
 	case NlsEvent::TranscriptionCompleted:
 		{//服务端停止实时音频流识别时
 			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onTranscriptionCompleted " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-			nls2_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+			nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
 
 			break;
 		}
@@ -741,7 +741,7 @@ static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
 			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onSentenceBegin " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
 			// if(recog_channel->timers_started == TRUE) {
-			// 	nls2_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+			// 	nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
 			// }
 			break;
 		}
@@ -750,7 +750,7 @@ static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
 			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onSentenceEnd " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
 
-			nls2_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
+			nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
 			break;
 		}
 	case NlsEvent::TaskFailed:
@@ -758,7 +758,7 @@ static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
 			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onTaskFailed " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
 			if(recog_channel->timers_started == TRUE) {
-				nls2_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+				nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
 			}
 			break;
 		}
@@ -767,7 +767,7 @@ static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
 			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onClose " APT_SIDRES_FMT,
 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
 			if(recog_channel->timers_started == TRUE) {
-				nls2_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+				nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
 			}
 			break;
 		}
