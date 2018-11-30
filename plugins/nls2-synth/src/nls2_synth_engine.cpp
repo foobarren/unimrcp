@@ -154,7 +154,7 @@ MRCP_PLUGIN_LOG_SOURCE_IMPLEMENT(SYNTH_PLUGIN,"SYNTH-PLUGIN")
 MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
 	/* create xfyun engine */
-	nls2_synth_engine_t *nls2_engine = apr_palloc(pool,sizeof(nls2_synth_engine_t));
+	nls2_synth_engine_t *nls2_engine = (nls2_synth_engine_t*)apr_palloc(pool,sizeof(nls2_synth_engine_t));
 	apt_task_t *task;
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
@@ -185,7 +185,7 @@ MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 /** Destroy synthesizer engine */
 static apt_bool_t nls2_synth_engine_destroy(mrcp_engine_t *engine)
 {
-	nls2_synth_engine_t *nls2_engine = engine->obj;
+	nls2_synth_engine_t *nls2_engine = (nls2_synth_engine_t*)engine->obj;
 	if(nls2_engine->task) {
 		apt_task_t *task = apt_consumer_task_base_get(nls2_engine->task);
 		apt_task_destroy(task);
@@ -197,7 +197,7 @@ static apt_bool_t nls2_synth_engine_destroy(mrcp_engine_t *engine)
 /** Open synthesizer engine */
 static apt_bool_t nls2_synth_engine_open(mrcp_engine_t *engine)
 {
-	nls2_synth_engine_t *nls2_engine = engine->obj;
+	nls2_synth_engine_t *nls2_engine = (nls2_synth_engine_t*)engine->obj;
 	if(nls2_engine->task) {
 		apt_task_t *task = apt_consumer_task_base_get(nls2_engine->task);
 		apt_task_start(task);
@@ -216,7 +216,7 @@ static apt_bool_t nls2_synth_engine_open(mrcp_engine_t *engine)
 /** Close synthesizer engine */
 static apt_bool_t nls2_synth_engine_close(mrcp_engine_t *engine)
 {
-	nls2_synth_engine_t *nls2_engine = engine->obj;
+	nls2_synth_engine_t *nls2_engine = (nls2_synth_engine_t*)engine->obj;
 	if(nls2_engine->task) {
 		apt_task_t *task = apt_consumer_task_base_get(nls2_engine->task);
 		apt_task_terminate(task,TRUE);
@@ -237,8 +237,8 @@ static mrcp_engine_channel_t* nls2_synth_engine_channel_create(mrcp_engine_t *en
 	mpf_termination_t *termination; 
 
 	/* create xfyun synth channel */
-	nls2_synth_channel_t *synth_channel = apr_palloc(pool,sizeof(nls2_synth_channel_t));
-	synth_channel->nls2_engine = engine->obj;
+	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t*)apr_palloc(pool,sizeof(nls2_synth_channel_t));
+	synth_channel->nls2_engine = (nls2_synth_engine_t*)eengine->obj;
 	synth_channel->speak_request = NULL;
 	synth_channel->stop_response = NULL;
 	synth_channel->time_to_complete = 0;
@@ -276,6 +276,7 @@ static mrcp_engine_channel_t* nls2_synth_engine_channel_create(mrcp_engine_t *en
 /** Destroy engine channel */
 static apt_bool_t nls2_synth_channel_destroy(mrcp_engine_channel_t *channel)
 {
+	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t*)channel->method_obj;
 	if(synth_channel->tts_session)
 	{
 		Nls2TTS::CloseSession(synth_channel->tts_session);
@@ -306,7 +307,7 @@ static apt_bool_t nls2_synth_channel_request_process(mrcp_engine_channel_t *chan
 /** Process SPEAK request */
 static apt_bool_t synth_response_construct(mrcp_message_t *response, mrcp_status_code_e status_code, mrcp_synth_completion_cause_e completion_cause)
 {
-	mrcp_synth_header_t *synth_header = mrcp_resource_header_prepare(response);
+	mrcp_synth_header_t *synth_header = (mrcp_synth_header_t*)mrcp_resource_header_prepare(response);
 	if(!synth_header) {
 		return FALSE;
 	}
@@ -317,7 +318,7 @@ static apt_bool_t synth_response_construct(mrcp_message_t *response, mrcp_status
 	return TRUE;
 }
 
-static apt_bool_t nls2_synth_notify_completed(nls_synth_channel_t* synth_channel, mrcp_synth_completion_cause_e completion_cause)
+static apt_bool_t nls2_synth_notify_completed(nls2_synth_channel_t* synth_channel, mrcp_synth_completion_cause_e completion_cause)
 {
 	/* raise SPEAK-COMPLETE event */
 	mrcp_message_t *message = mrcp_event_create(
@@ -349,7 +350,7 @@ static apt_bool_t nls2_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 	apt_log(APT_LOG_MARK, APT_PRIO_INFO, "[xfyun tts] process speak request");
 	apt_str_t *body;
 	const char* session_begin_params = "voice_name = xiaoyan, text_encoding = utf8, sample_rate = 8000, speed = 50, volume = 50, pitch = 50, rdn = 2";
-	nls2_synth_channel_t *synth_channel = channel->method_obj;
+	nls2_synth_channel_t *synth_channel = (nls2_synth_channel_t*)channel->method_obj;
 	const mpf_codec_descriptor_t *descriptor = mrcp_engine_source_stream_codec_get(channel);
 
 	if(!descriptor) {
