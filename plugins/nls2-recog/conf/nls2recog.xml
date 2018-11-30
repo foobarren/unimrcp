@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NlsRecog>
+	<AuthInfo>
+		<AccessKeyId></AccessKeyId>
+		<AccessKeySecret></AccessKeySecret>
+	</AuthInfo>
+	<Params>
+		<AppKey>nls2-service-telephone8khz</AppKey>
+		<SampleRate>8000</SampleRate>
+		<Format>pcm</Format>
+		<MaxEndSilence>800</MaxEndSilence>
+	</Params>
+	<ResultFormat>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; standalone=&quot;no&quot;?&gt;&lt;result&gt;&lt;interpretation confidence=&quot;1.0&quot;&gt;&lt;instance&gt;%s&lt;/instance&gt;&lt;input mode=&quot;speech&quot;&gt;%s&lt;/input&gt;&lt;/interpretation&gt;&lt;/result&gt;</ResultFormat>
+</NlsRecog>

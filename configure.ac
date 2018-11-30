@@ -190,6 +190,16 @@ UNI_PLUGIN_ENABLED(nlsrecog)
 
 AM_CONDITIONAL([NLSRECOG_PLUGIN],[test "${enable_nlsrecog_plugin}" = "yes"])
 
+dnl Nls2 synthesizer plugin.
+UNI_PLUGIN_ENABLED(nls2synth)
+
+AM_CONDITIONAL([NLS2SYNTH_PLUGIN],[test "${enable_nls2synth_plugin}" = "yes"])
+
+dnl Nls2 recognizer plugin.
+UNI_PLUGIN_ENABLED(nls2recog)
+
+AM_CONDITIONAL([NLS2RECOG_PLUGIN],[test "${enable_nls2recog_plugin}" = "yes"])
+
 dnl Demo synthesizer plugin.
 UNI_PLUGIN_ENABLED(demosynth)
 
@@ -240,6 +250,8 @@ AC_CONFIG_FILES([
     plugins/xfyun-recog/Makefile
     plugins/nls-synth/Makefile
     plugins/nls-recog/Makefile
+    plugins/nls2-synth/Makefile
+    plugins/nls2-recog/Makefile
     plugins/mrcp-recorder/Makefile
     plugins/demo-synth/Makefile
     plugins/demo-recog/Makefile
@@ -296,6 +308,8 @@ echo xfyun synthesizer plugin........ : $enable_xfyunsynth_plugin
 echo xfyun recognizer plugin......... : $enable_xfyunrecog_plugin
 echo Nls synthesizer plugin........ : $enable_nlssynth_plugin
 echo Nls recognizer plugin......... : $enable_nlsrecog_plugin
+echo Nls2 synthesizer plugin........ : $enable_nls2synth_plugin
+echo Nls2 recognizer plugin......... : $enable_nls2recog_plugin
 echo Demo synthesizer plugin....... : $enable_demosynth_plugin
 echo Demo recognizer plugin........ : $enable_demorecog_plugin
 echo Demo verifier plugin.......... : $enable_demoverifier_plugin

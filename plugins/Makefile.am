@@ -18,6 +18,15 @@ if NLSRECOG_PLUGIN
 SUBDIRS               += nls-recog
 endif
 
+if NLS2SYNTH_PLUGIN
+SUBDIRS               += nls2-synth
+endif
+
+if NLS2RECOG_PLUGIN
+SUBDIRS               += nls2-recog
+endif
+
+
 if DEMOSYNTH_PLUGIN
 SUBDIRS               += demo-synth
 endif
