@@ -746,10 +746,12 @@ static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
 		}
 	case NlsEvent::Close:
 		{///*语音功能通道连接关闭*/
-			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onClose " APT_SIDRES_FMT,
-				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-			if(recog_channel->timers_started == TRUE) {
-				nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onClose " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+				if(recog_channel->timers_started == TRUE) {
+					nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+				}
 			}
 			break;
 		}
