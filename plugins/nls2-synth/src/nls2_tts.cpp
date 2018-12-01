@@ -358,7 +358,7 @@ namespace Nls2TTS
 			if (this->m_pNlsReq == NULL)
 			{
 				apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,
-					"TTSSession::Start() failed on g_pNlsClient->createTranscriberRequest!!!"
+					"TTSSession::Start() failed on g_pNlsClient->createSynthesizerRequest!!!"
 					);
 
 				nRet	=	-1;
@@ -381,14 +381,14 @@ namespace Nls2TTS
 			*/
 			if (this->m_pNlsReq->start() < 0) {
 				apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,
-					"TTSSession::Start() failed!!!"
+					"TTSSession::Start() failed!, text is %s !!",value
 					);
 				nRet	=	-1;
 				break;
 			}
 
 			apt_log(SYNTH_LOG_MARK,APT_PRIO_INFO,
-				"TTSSession::Start() successfully."
+				"TTSSession::Start() successfully. text is %s",value
 				);
 
 			nRet	=	0;

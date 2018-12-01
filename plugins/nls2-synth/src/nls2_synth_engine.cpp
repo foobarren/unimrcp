@@ -405,7 +405,6 @@ static apt_bool_t nls2_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 		nls2_synth_notify_completed(synth_channel, SYNTHESIZER_COMPLETION_CAUSE_ERROR);
 		return FALSE;
 	}
-	mpf_buffer_event_write(synth_channel->audio_buffer, MEDIA_FRAME_TYPE_EVENT);
 	return TRUE;
 }
 
@@ -720,7 +719,7 @@ static int32_t	nls2_synth_on_nls2tts_notify(NlsEvent* cbEvent, void* pvContext)
 			if(synth_channel->speak_request){
 				apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,"onClose " APT_SIDRES_FMT,
 					MRCP_MESSAGE_SIDRES(synth_channel->speak_request));
-				nls2_synth_notify_completed(synth_channel,SYNTHESIZER_COMPLETION_CAUSE_ERROR);
+				// nls2_synth_notify_completed(synth_channel,SYNTHESIZER_COMPLETION_CAUSE_ERROR);
 			}
 			break;
 		}
