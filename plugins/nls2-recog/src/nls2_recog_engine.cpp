@@ -303,12 +303,37 @@ static apt_bool_t nls2_recog_channel_destroy(mrcp_engine_channel_t *channel)
 /** Open engine channel (asynchronous response MUST be sent)*/
 static apt_bool_t nls2_recog_channel_open(mrcp_engine_channel_t *channel)
 {
+	// nls2_recog_channel_t *recog_channel = (nls2_recog_channel_t*)channel->method_obj;
+	// recog_channel->asr_session	=	Nls2ASR::OpenASRSession();
+	// if (recog_channel->asr_session == NULL)
+	// {
+	// 	apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"Failed to open Nls2ASR session " APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
+	// 	response->start_line.status_code = MRCP_STATUS_CODE_RESOURCE_SPECIFIC_FAILURE;
+	// 	return FALSE;
+	// }
+	// if (recog_channel->asr_session->Start(&recog_channel->cbParam) != 0)
+	// {
+	// 	apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"Failed to start Nls2ASR session " APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
+	// 	response->start_line.status_code = MRCP_STATUS_CODE_RESOURCE_SPECIFIC_FAILURE;
+	// 	return FALSE;
+	// }
 	return nls2_recog_msg_signal(NLS2_RECOG_MSG_OPEN_CHANNEL,channel,NULL);
 }
 
 /** Close engine channel (asynchronous response MUST be sent)*/
 static apt_bool_t nls2_recog_channel_close(mrcp_engine_channel_t *channel)
 {
+	nls2_recog_channel_t *recog_channel = (nls2_recog_channel_t*)channel->method_obj;
+	if (recog_channel != NULL)
+	{
+		if (recog_channel->asr_session != NULL)
+		{
+			Nls2ASR::CloseASRSession(recog_channel->asr_session,recog_channel->timers_started);
+			recog_channel->asr_session = NULL;
+		}
+
+		apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"nls2_recog_channel_close() invoked!!!");
+	}
 	return nls2_recog_msg_signal(NLS2_RECOG_MSG_CLOSE_CHANNEL,channel,NULL);
 }
 
@@ -333,8 +358,6 @@ static apt_bool_t nls2_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 	}
 
 	recog_channel->timers_started = TRUE;
-
-
 	/* get recognizer header */
 	// recog_header = (mrcp_recog_header_t*)mrcp_resource_header_get(request);
 
@@ -352,11 +375,8 @@ static apt_bool_t nls2_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 			}
 		}
 	}
-
-	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
-	/* send asynchronous response */
-	mrcp_engine_channel_message_send(channel,response);
-
+	
+	recog_channel->recog_request = request;
 	recog_channel->asr_session	=	Nls2ASR::OpenASRSession();
 	if (recog_channel->asr_session == NULL)
 	{
@@ -371,7 +391,10 @@ static apt_bool_t nls2_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 		return FALSE;
 	}
 
-	recog_channel->recog_request = request;
+	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
+	/* send asynchronous response */
+	mrcp_engine_channel_message_send(channel,response);
+
 	return TRUE;
 }
 
@@ -504,57 +527,6 @@ static apt_bool_t nls2_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 				return TRUE;
 			}
 		}
-
-		// if(recog_channel->recog_sm)
-		// {
-		// 	nls2_recog_event_et	recog_event	=	nls2_recog_sm_get_status(recog_channel->recog_sm);
-		// 	switch(recog_event)
-		// 	{
-		// 	case nls2_recog_event_e_BeginSpeaking:
-		// 		{
-		// 			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"First Activity Sample detected, event(\"begin-speaking\") should be emitted " APT_SIDRES_FMT,
-		// 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-		// 			nls2_recog_start_of_input(recog_channel);
-		// 			break;
-		// 		}
-		// 	case nls2_recog_event_e_SpeechDetected:
-		// 		{
-		// 			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"EOS detected, event(\"speech-detected\") should be emitted " APT_SIDRES_FMT,
-		// 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-		// 			nls2_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
-		// 			break;
-		// 		}
-		// 	case nls2_recog_event_e_TimeoutNoInput:
-		// 		{
-		// 			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"Detected Noinput " APT_SIDRES_FMT,
-		// 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-		// 			if(recog_channel->timers_started == TRUE) {
-		// 				nls2_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_NO_INPUT_TIMEOUT);
-		// 			}
-		// 			break;
-		// 		}
-		// 	case nls2_recog_event_e_TimeoutDetecting:
-		// 		{
-		// 			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"Detected Too Much " APT_SIDRES_FMT,
-		// 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-		// 			if(recog_channel->timers_started == TRUE) {
-		// 				nls2_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_TOO_MUCH_SPEECH_TIMEOUT);
-		// 			}
-		// 			break;
-		// 		}
-		// 	case nls2_recog_event_e_Error:
-		// 		{
-		// 			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"Detected Too Much " APT_SIDRES_FMT,
-		// 				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-		// 			if(recog_channel->timers_started == TRUE) {
-		// 				nls2_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_ERROR);
-		// 			}
-		// 			break;
-		// 		}
-		// 	default:
-		// 		break;
-		// 	}
-		// }
 
 		if(recog_channel->recog_request) {
 			if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
@@ -716,30 +688,37 @@ static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
 	{
 	case NlsEvent::TranscriptionStarted:
 		{ // 调用start(), 成功与云端建立连接, sdk内部线程上报started事件
-			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onTranscriptionStarted, event(\"begin-speaking\") should be emitted " APT_SIDRES_FMT,
-				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
- 			nls2_recog_start_of_input(recog_channel);
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onTranscriptionStarted, event(\"begin-speaking\") should be emitted " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+			}
 			break;
 		}
 	case NlsEvent::TranscriptionResultChanged:
 		{ // 识别结果发生了变化, 当前句子的中间识别结果
-			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onTranscriptionResultChanged, event(\"speech-detected\") should be emitted " APT_SIDRES_FMT,
-				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onTranscriptionResultChanged, event(\"speech-detected\") should be emitted " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+			}
 			// nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
 			break;
 		}
 	case NlsEvent::TranscriptionCompleted:
 		{//服务端停止实时音频流识别时
-			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onTranscriptionCompleted " APT_SIDRES_FMT,
-				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-			nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
-
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onTranscriptionCompleted " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+				nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+			}
 			break;
 		}
 	case NlsEvent::SentenceBegin:
 		{//服务端检测到了一句话的开始
-			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onSentenceBegin " APT_SIDRES_FMT,
-				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onSentenceBegin " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+				nls2_recog_start_of_input(recog_channel);
+			}
 			// if(recog_channel->timers_started == TRUE) {
 			// 	nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
 			// }
@@ -747,18 +726,22 @@ static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
 		}
 	case NlsEvent::SentenceEnd:
 		{//服务端检测到了一句话结束
-			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onSentenceEnd " APT_SIDRES_FMT,
-				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onSentenceEnd " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
 
-			nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
+				nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
+			}
 			break;
 		}
 	case NlsEvent::TaskFailed:
 		{//识别过程(包含start(), send(), stop())发生异常时
-			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onTaskFailed " APT_SIDRES_FMT,
-				MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-			if(recog_channel->timers_started == TRUE) {
-				nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onTaskFailed " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+				if(recog_channel->timers_started == TRUE) {
+					nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+				}
 			}
 			break;
 		}
