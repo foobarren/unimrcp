@@ -1,11 +1,13 @@
 #include <ctime>
+#include <iostream>
 #include "nls2_tts.h"
 
 #include "tinyxml2.h"
 using namespace tinyxml2;
 using AlibabaNls::NlsClient;
 using std::string;
-
+using std::cout;
+using std::endl;
 extern apt_log_source_t *SYNTH_PLUGIN;
 
 /** Use custom log source mark */
@@ -211,14 +213,15 @@ namespace Nls2TTS
 		* @return
 	*/
 	void OnSynthesisStarted(NlsEvent* cbEvent, void* cbParam) {
+
+		cout << "OnSynthesisStarted: "
+			<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
+			<< ", task id: " << cbEvent->getTaskId()   // 当前任务的task id，方便定位问题，建议输出
+			<< endl;
+		//cout << "OnSynthesisStarted: All response:" << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
 		ParamCallBack*	pSession	=	(ParamCallBack*)cbParam;
 		pSession->pfnOnNotify(cbEvent,pSession->pContext);
 
-		// cout << "OnSynthesisStarted: "
-		// 	<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
-		// 	<< ", task id: " << cbEvent->getTaskId()   // 当前任务的task id，方便定位问题，建议输出
-		// 	<< endl;
-		// cout << "OnSynthesisStarted: All response:" << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
 	}
 
 	/**
@@ -230,14 +233,15 @@ namespace Nls2TTS
 		* @return
 	*/
 	void OnSynthesisCompleted(NlsEvent* cbEvent, void* cbParam) {
+
+		cout << "OnSynthesisCompleted: "
+			<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
+			<< ", task id: " << cbEvent->getTaskId()   // 当前任务的task id，方便定位问题，建议输出
+			<< endl;
+		// cout << "OnSynthesisCompleted: All response:" << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
 		ParamCallBack*	pSession	=	(ParamCallBack*)cbParam;
 		pSession->pfnOnNotify(cbEvent,pSession->pContext);
 
-		// cout << "OnSynthesisCompleted: "
-		// 	<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
-		// 	<< ", task id: " << cbEvent->getTaskId()   // 当前任务的task id，方便定位问题，建议输出
-		// 	<< endl;
-		// // cout << "OnSynthesisCompleted: All response:" << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
 	}
 
 	/**
@@ -249,15 +253,17 @@ namespace Nls2TTS
 		* @return
 	*/
 	void OnSynthesisTaskFailed(NlsEvent* cbEvent, void* cbParam) {
+
+		cout << "OnSynthesisTaskFailed: "
+			<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
+			<< ", task id: " << cbEvent->getTaskId()   // 当前任务的task id，方便定位问题，建议输出
+			<< ", error message: " << cbEvent->getErrorMessage()
+			<< endl;
+		// cout << "OnSynthesisTaskFailed: All response:" << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
+
 		ParamCallBack*	pSession	=	(ParamCallBack*)cbParam;
 		pSession->pfnOnNotify(cbEvent,pSession->pContext);
 
-		// cout << "OnSynthesisTaskFailed: "
-		// 	<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
-		// 	<< ", task id: " << cbEvent->getTaskId()   // 当前任务的task id，方便定位问题，建议输出
-		// 	<< ", error message: " << cbEvent->getErrorMessage()
-		// 	<< endl;
-		// // cout << "OnSynthesisTaskFailed: All response:" << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
 	}
 
 	/**
@@ -268,10 +274,10 @@ namespace Nls2TTS
 		* @return
 	*/
 	void OnSynthesisChannelClosed(NlsEvent* cbEvent, void* cbParam) {
+		cout << "OnRecognitionChannelCloseed: All response: " << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
+
 		ParamCallBack*	pSession	=	(ParamCallBack*)cbParam;
 		pSession->pfnOnNotify(cbEvent,pSession->pContext);
-
-		// cout << "OnRecognitionChannelCloseed: All response: " << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
 	}
 
 	/**
@@ -282,21 +288,20 @@ namespace Nls2TTS
 		* @return
 	*/
 	void OnBinaryDataRecved(NlsEvent* cbEvent, void* cbParam) {
-		ParamCallBack*	pSession	=	(ParamCallBack*)cbParam;
-		pSession->pfnOnNotify(cbEvent,pSession->pContext);
+		vector<unsigned char> data = cbEvent->getBinaryData(); // getBinaryData() 获取文本合成的二进制音频数据
 
-		// vector<unsigned char> data = cbEvent->getBinaryData(); // getBinaryData() 获取文本合成的二进制音频数据
-
-		// cout << "OnBinaryDataRecved: "
-		// 	<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
-		// 	<< ", taskId: " << cbEvent->getTaskId()        // 当前任务的task id，方便定位问题，建议输出
-		// 	<< ", data size: " << data.size()              // 数据的大小
-		// 	<< endl;
+		cout << "OnBinaryDataRecved: "
+			<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
+			<< ", taskId: " << cbEvent->getTaskId()        // 当前任务的task id，方便定位问题，建议输出
+			<< ", data size: " << data.size()              // 数据的大小
+			<< endl;
 
 		// // 以追加形式将二进制音频数据写入文件
 		// if (data.size() > 0) {
 		// 	tmpParam->audioFile.write((char*)&data[0], data.size());
 		// }
+		ParamCallBack*	pSession	=	(ParamCallBack*)cbParam;
+		pSession->pfnOnNotify(cbEvent,pSession->pContext);
 	}
 
 
@@ -357,7 +362,7 @@ namespace Nls2TTS
 				nRet	=	-1;
 				break;
 			}
-			this->m_pNlsReq->setAppKey(tst->appkey.c_str()); // 设置AppKey, 必填参数, 请参照官网申请
+			this->m_pNlsReq->setAppKey(g_strAppKey.c_str()); // 设置AppKey, 必填参数, 请参照官网申请
 			this->m_pNlsReq->setVoice(g_strVoice.c_str()); // 发音人, 包含"xiaoyun", "ruoxi" "xiaogang". 可选参数, 默认是xiaoyun
 			this->m_pNlsReq->setVolume(50); // 音量, 范围是0~100, 可选参数, 默认50
 			this->m_pNlsReq->setFormat(g_strFormat.c_str()); // 音频编码格式, 可选参数, wav. 支持的格式pcm, wav, mp3
