@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <umcscenario name="synth" class="Synthesizer" profile="uni2">
   <resource-discovery enable="0"/>
-  <speak enable="1" content-type="application/synthesis+ssml" content-location="speak.xml"/>
-  <!-- <speak enable="1" content-type="text/plain" content-location="speak.txt"/> -->
+  <!-- <speak enable="1" content-type="application/synthesis+ssml" content-location="speak.xml"/> -->
+  <speak enable="1" content-type="text/plain" content-location="speak.txt"/>
 
   <termination enable="1">
     <capabilities>
