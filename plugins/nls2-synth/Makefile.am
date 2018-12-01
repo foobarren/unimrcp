@@ -8,7 +8,7 @@ nls2synth_la_SOURCES       = src/nls2_synth_engine.cpp \
 				src/nls2_tts.cpp \
 				src/tinyxml2.cpp
 nls2synth_la_LDFLAGS       = $(UNIMRCP_PLUGIN_OPTS) \
-				-L$(DEPS_HOME)/NlsSdkCpp2.0/lib/linux  -lnlsCppSdk -lnlsCommonSdk 
+				-L$(DEPS_HOME)/NlsSdkCpp2.0/lib/linux  -lnlsCppSdk -lnlsCommonSdk -lcurl
 
 install-data-local:
 	test -d $(DESTDIR)$(sysconfdir) || $(MAKE) def-conf

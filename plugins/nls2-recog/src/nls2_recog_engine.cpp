@@ -355,9 +355,7 @@ static apt_bool_t nls2_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 		apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Codec Descriptor " APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
 		return FALSE;
-	}
-
-	recog_channel->timers_started = TRUE;
+	}	
 	/* get recognizer header */
 	// recog_header = (mrcp_recog_header_t*)mrcp_resource_header_get(request);
 
@@ -375,7 +373,7 @@ static apt_bool_t nls2_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 			}
 		}
 	}
-	
+
 	recog_channel->recog_request = request;
 	recog_channel->asr_session	=	Nls2ASR::OpenASRSession();
 	if (recog_channel->asr_session == NULL)
@@ -391,6 +389,8 @@ static apt_bool_t nls2_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 		return FALSE;
 	}
 
+	recog_channel->timers_started = TRUE;
+	
 	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
 	/* send asynchronous response */
 	mrcp_engine_channel_message_send(channel,response);
@@ -517,17 +517,6 @@ static apt_bool_t nls2_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 		}
 		*/
 
-		if(recog_channel->asr_session)
-		{
-			if(recog_channel->asr_session->FeedAudioData(frame->codec_frame.buffer, frame->codec_frame.size)==-1)
-			{
-				Nls2ASR::CloseASRSession(recog_channel->asr_session,recog_channel->timers_started);
-				recog_channel->asr_session = NULL;
-				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"nls2_recog_stream_write() FeedAudioData Failed,asrserver disconnected!");
-				return TRUE;
-			}
-		}
-
 		if(recog_channel->recog_request) {
 			if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
 				if(frame->marker == MPF_MARKER_START_OF_EVENT) {
@@ -540,6 +529,16 @@ static apt_bool_t nls2_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 						MRCP_MESSAGE_SIDRES(recog_channel->recog_request),
 						frame->event_frame.event_id,
 						frame->event_frame.duration);
+				}
+			}else{
+				if(recog_channel->timers_started){
+					if(recog_channel->asr_session->FeedAudioData(frame->codec_frame.buffer, frame->codec_frame.size)==-1)
+					{
+						Nls2ASR::CloseASRSession(recog_channel->asr_session,recog_channel->timers_started);
+						recog_channel->asr_session = NULL;
+						apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"nls2_recog_stream_write() FeedAudioData Failed,asrserver disconnected!");
+						return TRUE;
+					}
 				}
 			}
 		}

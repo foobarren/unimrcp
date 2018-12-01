@@ -1,5 +1,6 @@
 #include <ctime>
 #include <iostream>
+#include <vector>
 #include "nls2_tts.h"
 
 #include "tinyxml2.h"
@@ -8,6 +9,7 @@ using AlibabaNls::NlsClient;
 using std::string;
 using std::cout;
 using std::endl;
+using std::vector;
 extern apt_log_source_t *SYNTH_PLUGIN;
 
 /** Use custom log source mark */
