@@ -143,7 +143,8 @@ struct nls2_recog_msg_t {
 static apt_bool_t nls2_recog_msg_signal(nls2_recog_msg_type_e type, mrcp_engine_channel_t *channel, mrcp_message_t *request);
 static apt_bool_t nls2_recog_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
-static int32_t nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext);
+static int32_t nls2_recog_on_speechrecognizer_notify(NlsEvent* cbEvent, void* pvContext);
+static int32_t nls2_recog_on_speechtranscriber_notify(NlsEvent* cbEvent, void* pvContext);
 /** Declare this macro to set plugin version */
 MRCP_PLUGIN_VERSION_DECLARE
 
@@ -264,7 +265,7 @@ static mrcp_engine_channel_t* nls2_recog_engine_channel_create(mrcp_engine_t *en
 	//recog_channel->detector = mpf_activity_detector_create(pool);
 	recog_channel->audio_out = NULL;
 	recog_channel->asr_session = NULL;
-	recog_channel->cbParam.pfnOnNotify = nls2_recog_on_nls2asr_notify;
+	recog_channel->cbParam.pfnOnNotify = nls2_recog_on_speechrecognizer_notify;
 	recog_channel->cbParam.pContext = recog_channel;
 	recog_channel->timers_started = FALSE;
 	// recog_channel->asrserver_disconnected = FALSE;
@@ -375,6 +376,7 @@ static apt_bool_t nls2_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 	}
 
 	recog_channel->recog_request = request;
+	recog_channel->cbParam.pfnOnNotify = nls2_recog_on_speechrecognizer_notify;
 	recog_channel->asr_session	=	Nls2ASR::OpenASRSession();
 	if (recog_channel->asr_session == NULL)
 	{
@@ -679,7 +681,70 @@ static apt_bool_t nls2_recog_recognition_complete(nls2_recog_channel_t *recog_ch
 	return mrcp_engine_channel_message_send(recog_channel->channel,message);
 }
 
-static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
+
+static int32_t	nls2_recog_on_speechrecognizer_notify(NlsEvent* cbEvent, void* pvContext)
+{
+	nls2_recog_channel_t*	recog_channel =	(nls2_recog_channel_t*)pvContext;
+	NlsEvent::EventType evType = cbEvent->getMsgType();
+	switch (evType)
+	{
+	case NlsEvent::RecognitionStarted:
+		{ // 调用start(), 成功与云端建立连接, sdk内部线程上报started事件
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onRecognitionStarted, event(\"begin-speaking\") should be emitted " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+				nls2_recog_start_of_input(recog_channel);
+			}
+			break;
+		}
+	case NlsEvent::RecognitionResultChanged:
+		{ // 识别结果发生了变化, 当前句子的中间识别结果
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onRecognitionResultChanged, event(\"speech-detected\") should be emitted " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+			}
+			// nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
+			break;
+		}
+	case NlsEvent::RecognitionCompleted:
+		{//服务端停止实时音频流识别时
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onRecognitionCompleted " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+				nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
+			}
+			break;
+		}
+	case NlsEvent::TaskFailed:
+		{//识别过程(包含start(), send(), stop())发生异常时
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onTaskFailed " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+				if(recog_channel->timers_started == TRUE) {
+					nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+				}
+			}
+			break;
+		}
+	case NlsEvent::Close:
+		{///*语音功能通道连接关闭*/
+			if(recog_channel->recog_request){
+				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onClose " APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+				if(recog_channel->timers_started == TRUE) {
+					nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+				}
+			}
+			break;
+		}
+	default:
+		{
+			break;
+		}
+	}
+}
+
+static int32_t	nls2_recog_on_speechtranscriber_notify(NlsEvent* cbEvent, void* pvContext)
 {
 	nls2_recog_channel_t*	recog_channel =	(nls2_recog_channel_t*)pvContext;
 	NlsEvent::EventType evType = cbEvent->getMsgType();
@@ -761,4 +826,3 @@ static int32_t	nls2_recog_on_nls2asr_notify(NlsEvent* cbEvent, void* pvContext)
 		}
 	}
 }
-

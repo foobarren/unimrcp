@@ -143,14 +143,19 @@ int32_t	GlobalFini()
 	return 0;
 }
 
-ASRSession*	OpenASRSession()
+ASRSession*	OpenASRSession(int type)
 {
 	ASRSession*	pSession	=	NULL;
 
 	int32_t	nRet	=	-1;
 	for (int32_t iOnce=0; iOnce<1; ++iOnce)
 	{
-		pSession	=	new ASRSession();
+		if(type==0){
+			pSession	=	new SpeechRecognizerSession();
+		}else{
+			pSession	=	new SpeechTranscriberSession();
+		}
+
 		if (pSession == NULL)
 		{
 			nRet	=	-1;
@@ -346,6 +351,64 @@ void onTaskFailed(NlsEvent* cbEvent, void* cbParam) {
 	pSession->pfnOnNotify(cbEvent,pSession->pContext);
 }
 
+
+
+/**
+    * @brief 调用start(), 成功与云端建立连接, sdk内部线程上报started事件
+    * @note 不允许在回调函数内部调用stop(), releaseRecognizerRequest()对象操作, 否则会异常
+    * @param cbEvent 回调事件结构, 详见nlsEvent.h
+    * @param cbParam 回调自定义参数，默认为NULL, 可以根据需求自定义参数
+    * @return
+*/
+void OnRecognitionStarted(NlsEvent* cbEvent, void* cbParam) {
+	cout << "OnRecognitionStarted: "
+		<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
+		<< ", task id: " << cbEvent->getTaskId()   // 当前任务的task id，方便定位问题，建议输出
+		<< endl;
+	// cout << "OnRecognitionStarted: All response:" << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
+	ParamCallBack*	pSession	=	(ParamCallBack*)cbParam;
+	pSession->pfnOnNotify(cbEvent,pSession->pContext);
+
+}
+
+/**
+    * @brief 设置允许返回中间结果参数, sdk在接收到云端返回到中间结果时, sdk内部线程上报ResultChanged事件
+    * @note 不允许在回调函数内部调用stop(), releaseRecognizerRequest()对象操作, 否则会异常
+    * @param cbEvent 回调事件结构, 详见nlsEvent.h
+    * @param cbParam 回调自定义参数，默认为NULL, 可以根据需求自定义参数
+    * @return
+*/
+void OnRecognitionResultChanged(NlsEvent* cbEvent, void* cbParam) {
+	cout << "OnRecognitionResultChanged: "
+		<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
+		<< ", task id: " << cbEvent->getTaskId()    // 当前任务的task id，方便定位问题，建议输出
+		<< ", result: " << cbEvent->getResult()     // 获取中间识别结果
+		<< endl;
+	// cout << "OnRecognitionResultChanged: All response:" << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
+	ParamCallBack*	pSession	=	(ParamCallBack*)cbParam;
+	pSession->pfnOnNotify(cbEvent,pSession->pContext);
+}
+
+/**
+    * @brief sdk在接收到云端返回识别结束消息时, sdk内部线程上报Completed事件
+    * @note 上报Completed事件之后, SDK内部会关闭识别连接通道. 此时调用sendAudio会返回-1, 请停止发送.
+    *       不允许在回调函数内部调用stop(), releaseRecognizerRequest()对象操作, 否则会异常.
+    * @param cbEvent 回调事件结构, 详见nlsEvent.h
+    * @param cbParam 回调自定义参数，默认为NULL, 可以根据需求自定义参数
+    * @return
+*/
+void OnRecognitionCompleted(NlsEvent* cbEvent, void* cbParam) {
+	cout << "OnRecognitionCompleted: "
+		<< "status code: " << cbEvent->getStausCode()  // 获取消息的状态码，成功为0或者20000000，失败时对应失败的错误码
+		<< ", task id: " << cbEvent->getTaskId()    // 当前任务的task id，方便定位问题，建议输出
+		<< ", result: " << cbEvent->getResult()  // 获取中间识别结果
+		<< endl;
+	// cout << "OnRecognitionCompleted: All response:" << cbEvent->getAllResponse() << endl; // 获取服务端返回的全部信息
+	ParamCallBack*	pSession	=	(ParamCallBack*)cbParam;
+	pSession->pfnOnNotify(cbEvent,pSession->pContext);
+
+}
+
 /**
     * @brief 识别结束或发生异常时，会关闭连接通道, sdk内部线程上报ChannelCloseed事件
     * @note 不允许在回调函数内部调用stop(), releaseTranscriberRequest()对象操作, 否则会异常
@@ -360,17 +423,153 @@ void onChannelClosed(NlsEvent* cbEvent, void* cbParam) {
 }
 
 
-ASRSession::ASRSession()
+SpeechRecognizerSession::SpeechRecognizerSession()
 :m_pNlsReq(NULL), m_pNlsCB(NULL)
 {
 }
 
-ASRSession::~ASRSession()
+SpeechRecognizerSession::~SpeechRecognizerSession()
 {
 	this->Stop();
 }
 
-int32_t	ASRSession::Start(void* pContext)
+int32_t	SpeechRecognizerSession::Start(void* pContext)
+{
+	int32_t	nRet	=	-1;
+
+	for (int32_t iOnce=0; iOnce<1; ++iOnce)
+	{
+		/**
+		 * 获取当前系统时间戳，判断token是否过期
+		 */
+		std::time_t curTime = std::time(0);
+		if (g_lExireTime - curTime < 10) {
+			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
+			 "the token will be expired, please generate new token by AccessKey-ID and AccessKey-Secret." 
+			 );
+			if (-1 == generateToken(g_strDftAccessKeyId, g_strDftAccessKeySecret, &g_strToken, &g_lExireTime)) {
+				nRet	=	-1;
+				break;
+			}
+		}
+		
+		this->m_pNlsCB	=	new SpeechRecognizerCallback();
+		if (this->m_pNlsCB == NULL)
+		{
+			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
+				"SpeechRecognizerSession::Start() failed on new SpeechRecognizerCallback()!!!"
+				);
+
+			nRet	=	-1;
+			break;
+		}
+		this->m_pNlsCB->setOnRecognitionStarted(OnRecognitionStarted, pContext); // 设置识别启动回调函数
+		this->m_pNlsCB->setOnRecognitionResultChanged(OnRecognitionResultChanged, pContext); // 设置识别结果变化回调函数
+		this->m_pNlsCB->setOnRecognitionCompleted(OnRecognitionCompleted, pContext); // 设置语音转写结束回调函数
+		this->m_pNlsCB->setOnTaskFailed(onTaskFailed, pContext); // 设置异常识别回调函数
+		this->m_pNlsCB->setOnChannelClosed(onChannelClosed, pContext); // 设置识别通道关闭回调函数
+
+
+		this->m_pNlsReq	=	g_pNlsClient->createRecognizerRequest(this->m_pNlsCB);
+		if (this->m_pNlsReq == NULL)
+		{
+			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
+				"SpeechRecognizerSession::Start() failed on g_pNlsClient->createRecognizerRequest!!!"
+				);
+
+			nRet	=	-1;
+			break;
+		}
+		this->m_pNlsReq->setAppKey(g_strAppKey.c_str()); // 设置AppKey, 必填参数, 请参照官网申请
+		this->m_pNlsReq->setFormat(g_strFormat.c_str()); // 设置音频数据编码格式, 可选参数，目前支持pcm, opu, opus, speex. 默认是pcm
+		this->m_pNlsReq->setSampleRate(g_iSampleRate); // 设置音频数据采样率, 可选参数，目前支持16000, 8000. 默认是16000
+		this->m_pNlsReq->setIntermediateResult(false); // 设置是否返回中间识别结果, 可选参数. 默认false
+		this->m_pNlsReq->setPunctuationPrediction(false); // 设置是否在后处理中添加标点, 可选参数. 默认false
+		this->m_pNlsReq->setInverseTextNormalization(false); // 设置是否在后处理中执行数字转写, 可选参数. 默认false
+		this->m_pNlsReq->setEnableVoiceDetection(false); // 是否启动自定义静音检测, 可选. 默认是False. 云端默认静音检测时间800ms.
+		//this->m_pNlsReq->setMaxStartSilence(g_iMaxSentenceSilence);//允许的最大开始静音, 可选. 单位是毫秒. 超出后服务端将会发送RecognitionCompleted事件, 结束本次识别.
+														//需要先设置enable_voice_detection为true. 建议时间2~5秒.
+		//this->m_pNlsReq->setMaxEndSilence(g_iMaxSentenceSilence);//允许的最大结束静音, 可选, 单位是毫秒. 超出后服务端将会发送RecognitionCompleted事件, 结束本次识别.
+    													//需要先设置enable_voice_detection为true. 建议时间0~5秒.
+		this->m_pNlsReq->setToken(g_strToken.c_str()); // 设置账号校验token, 必填参数
+		/*
+		* 3: start()为阻塞操作, 发送start指令之后, 会等待服务端响应, 或超时之后才返回
+		*/
+		if (this->m_pNlsReq->start() < 0) {
+			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
+				"SpeechRecognizerSession::Start() failed!!!"
+				);
+			nRet	=	-1;
+			break;
+		}
+
+		apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,
+			"SpeechRecognizerSession::Start() successfully."
+			);
+
+		nRet	=	0;
+	}
+	if (nRet != 0)
+	{
+		this->Stop(false);
+	}
+
+	return nRet;
+}
+
+int32_t	SpeechRecognizerSession::Stop(bool bNeedStop)
+{
+	if (this->m_pNlsReq != NULL)
+	{
+		if (bNeedStop)
+		{
+			this->m_pNlsReq->stop();
+		}
+
+		g_pNlsClient->releaseRecognizerRequest(this->m_pNlsReq);
+		this->m_pNlsReq	=	NULL;
+	}
+
+	if (this->m_pNlsCB != NULL)
+	{
+		delete this->m_pNlsCB;
+		this->m_pNlsCB	=	NULL;
+	}
+
+	apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,
+		"SpeechRecognizerSession::Stop() invoked."
+		);
+
+	return 0;
+}
+
+int32_t	SpeechRecognizerSession::FeedAudioData(const void* pvAudioData, uint32_t lenAudioData)
+{
+	if (this->m_pNlsReq == NULL)
+	{
+		apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
+			"SpeechRecognizerSession::FeedAudioData() failed, this->m_pNlsReq is NULL!!!"
+			);
+
+		return -1;
+	}
+
+	return this->m_pNlsReq->sendAudio((char*)pvAudioData, lenAudioData) ;
+}
+
+
+
+SpeechTranscriberSession::SpeechTranscriberSession()
+:m_pNlsReq(NULL), m_pNlsCB(NULL)
+{
+}
+
+SpeechTranscriberSession::~SpeechTranscriberSession()
+{
+	this->Stop();
+}
+
+int32_t	SpeechTranscriberSession::Start(void* pContext)
 {
 	int32_t	nRet	=	-1;
 
@@ -394,7 +593,7 @@ int32_t	ASRSession::Start(void* pContext)
 		if (this->m_pNlsCB == NULL)
 		{
 			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
-				"ASRSession::Start() failed on new SpeechTranscriberCallback()!!!"
+				"SpeechTranscriberSession::Start() failed on new SpeechTranscriberCallback()!!!"
 				);
 
 			nRet	=	-1;
@@ -413,7 +612,7 @@ int32_t	ASRSession::Start(void* pContext)
 		if (this->m_pNlsReq == NULL)
 		{
 			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
-				"ASRSession::Start() failed on g_pNlsClient->createTranscriberRequest!!!"
+				"SpeechTranscriberSession::Start() failed on g_pNlsClient->createTranscriberRequest!!!"
 				);
 
 			nRet	=	-1;
@@ -433,14 +632,14 @@ int32_t	ASRSession::Start(void* pContext)
 		*/
 		if (this->m_pNlsReq->start() < 0) {
 			apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
-				"ASRSession::Start() failed!!!"
+				"SpeechTranscriberSession::Start() failed!!!"
 				);
 			nRet	=	-1;
 			break;
 		}
 
 		apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,
-			"ASRSession::Start() successfully."
+			"SpeechTranscriberSession::Start() successfully."
 			);
 
 		nRet	=	0;
@@ -453,7 +652,7 @@ int32_t	ASRSession::Start(void* pContext)
 	return nRet;
 }
 
-int32_t	ASRSession::Stop(bool bNeedStop)
+int32_t	SpeechTranscriberSession::Stop(bool bNeedStop)
 {
 	if (this->m_pNlsReq != NULL)
 	{
@@ -473,18 +672,18 @@ int32_t	ASRSession::Stop(bool bNeedStop)
 	}
 
 	apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,
-		"ASRSession::Stop() invoked."
+		"SpeechTranscriberSession::Stop() invoked."
 		);
 
 	return 0;
 }
 
-int32_t	ASRSession::FeedAudioData(const void* pvAudioData, uint32_t lenAudioData)
+int32_t	SpeechTranscriberSession::FeedAudioData(const void* pvAudioData, uint32_t lenAudioData)
 {
 	if (this->m_pNlsReq == NULL)
 	{
 		apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,
-			"ASRSession::FeedAudioData() failed, this->m_pNlsReq is NULL!!!"
+			"SpeechTranscriberSession::FeedAudioData() failed, this->m_pNlsReq is NULL!!!"
 			);
 
 		return -1;
@@ -493,72 +692,6 @@ int32_t	ASRSession::FeedAudioData(const void* pvAudioData, uint32_t lenAudioData
 	return this->m_pNlsReq->sendAudio((char*)pvAudioData, lenAudioData) ;
 }
 
-// int32_t	ASRSession::OnNotify(void* pvContext, ET_AsrStatus eStatus, const std::string& strResult)
-// {
-// 	NlsASRSession*	pSession	=	(NlsASRSession*)pvContext;
-// 	if (pSession == NULL)
-// 	{
-// 		return -1;
-// 	}
-// 	if ((pSession->m_pfnOnNotify == NULL) || (pSession->m_pvContext == NULL))
-// 	{
-// 		return -1;
-// 	}
-
-// 	if (eStatus != E_AsrStatus_Detecting)
-// 	{
-// 		return pSession->m_pfnOnNotify(pSession->m_pvContext, E_AsrStatus_Invalid, "");
-// 	}
-
-// 	// ignore while none-result returned
-// 	if (strResult.find("\"text\":") == std::string::npos)
-// 	{
-// 		return 0;
-// 	}
-
-// 	if (strResult.find("\"status_code\":0") == std::string::npos)
-// 	{ // partial result returned
-// 		if (pSession->m_eAsrStatus == E_AsrStatus_Feeding)
-// 		{
-// 			pSession->m_eAsrStatus	=	E_AsrStatus_Detecting;
-// 			return pSession->m_pfnOnNotify(pSession->m_pvContext, E_AsrStatus_Detecting, "");
-// 		}
-// 	}
-// 	else
-// 	{ // entire result returned
-// 		std::string::size_type	posBegin	=	strResult.find("\"text\":\"");
-// 		if (posBegin == std::string::npos)
-// 		{
-// 			return pSession->m_pfnOnNotify(pSession->m_pvContext, E_AsrStatus_Invalid, "");
-// 		}
-// 		posBegin	=	posBegin + strlen("\"text\":\"");
-// 		std::string::size_type	posEnd		=	strResult.find("\"", posBegin+1);
-// 		if (posEnd == std::string::npos)
-// 		{
-// 			return pSession->m_pfnOnNotify(pSession->m_pvContext, E_AsrStatus_Invalid, "");
-// 		}
-// 		std::string	strResultRaw	=	strResult.substr(posBegin, posEnd-posBegin);
-
-// 		pSession->m_eAsrStatus	=	E_AsrStatus_Detected;
-// 		/*
-// 		std::string	strResultFormatted	=	std::string(
-// 		"<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?>"
-// 		"<result>"
-// 			"<interpretation confidence=\"1.0\">"
-// 				"<instance>") + strResultRaw + "</instance>"
-// 				"<input mode=\"speech\">" + strResultRaw + "</input>"
-// 			"</interpretation>"
-// 		"</result>";
-// 		return pSession->m_pfnOnNotify(pSession->m_pvContext, E_AsrStatus_Detected, strResultFormatted);
-// 		*/
-// 		std::string	strResultFormatted	=	g_strResultFormat;
-// 		StrReplace(strResultFormatted, "%s", strResultRaw);
-
-// 		return pSession->m_pfnOnNotify(pSession->m_pvContext, E_AsrStatus_Detected, strResultFormatted);
-// 	}
-
-// 	return 0;
-// }
 
 }; //namespace Nls2
 

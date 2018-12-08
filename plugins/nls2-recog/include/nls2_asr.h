@@ -10,6 +10,7 @@
 
 #include "nlsClient.h"
 #include "nlsEvent.h"
+#include "speechRecognizerRequest.h"
 #include "speechTranscriberRequest.h"
 #include "nlsCommonSdk/Token.h"
 
@@ -19,13 +20,25 @@ using std::map;
 using namespace AlibabaNlsCommon;
 
 using AlibabaNls::NlsEvent;
+
+using AlibabaNls::SpeechRecognizerCallback;
+using AlibabaNls::SpeechRecognizerRequest;
+
 using AlibabaNls::SpeechTranscriberCallback;
 using AlibabaNls::SpeechTranscriberRequest;
 
 
 namespace Nls2ASR
 {
-	class ASRSession;
+	class ASRSession
+	{
+	public:
+		virtual ~ASRSession(){};
+		virtual int32_t	Start(void* pContext) =0; //pContext is ParamCallBack*
+		virtual int32_t	Stop(bool bNeedStop = true) =0;
+ 
+		virtual int32_t	FeedAudioData(const void* pvAudioData, uint32_t lenAudioData)=0 ;
+	};
 	//ASR事件类型
 	// enum ET_AsrEventType
 	// {
@@ -48,14 +61,29 @@ namespace Nls2ASR
 	int32_t	GlobalInit(const std::string& strFilePathConf);
 	int32_t	GlobalFini();
 
-	ASRSession*	OpenASRSession();
+	ASRSession*	OpenASRSession(int type = 0);
 	int32_t	CloseASRSession(ASRSession* pSession,bool bNeedStop = true);
 
-	class ASRSession
+	class SpeechRecognizerSession: public ASRSession
 	{
 	public:
-		ASRSession();
-		~ASRSession();
+		SpeechRecognizerSession();
+		~SpeechRecognizerSession();
+		int32_t	Start(void* pContext); //pContext is ParamCallBack*
+		int32_t	Stop(bool bNeedStop = true);
+
+		int32_t	FeedAudioData(const void* pvAudioData, uint32_t lenAudioData);
+
+	private:
+		SpeechRecognizerRequest*	m_pNlsReq;
+		SpeechRecognizerCallback*	m_pNlsCB;
+	};
+
+	class SpeechTranscriberSession: public ASRSession
+	{
+	public:
+		SpeechTranscriberSession();
+		~SpeechTranscriberSession();
 		int32_t	Start(void* pContext); //pContext is ParamCallBack*
 		int32_t	Stop(bool bNeedStop = true);
 
