@@ -111,7 +111,8 @@ static const apt_str_table_item_t v2_recog_header_string_table[] = {
 	{{"Save-Best-Waveform",               18},10},
 	{{"New-Phrase-ID",                    13},4},
 	{{"Confusable-Phrases-URI",           22},4},
-	{{"Abort-Phrase-Enrollment",          23},0}
+	{{"Abort-Phrase-Enrollment",          23},0},
+	{{"Multiple-Mode",          		  13},4}
 };
 
 /** String table of MRCPv1 recognizer completion-cause fields (mrcp_recog_completion_cause_e) */
@@ -206,6 +207,7 @@ static void mrcp_recog_header_init(mrcp_recog_header_t *recog_header)
 	apt_string_reset(&recog_header->new_phrase_id);
 	apt_string_reset(&recog_header->confusable_phrases_uri);
 	recog_header->abort_phrase_enrollment = FALSE;
+	recog_header->multiple_mode = FALSE;
 }
 
 /** Allocate MRCP recognizer header */
@@ -347,6 +349,9 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_recog_header_t *recog_header, apr
 			break;
 		case RECOGNIZER_HEADER_ABORT_PHRASE_ENROLLMENT:
 			apt_boolean_value_parse(value,&recog_header->abort_phrase_enrollment);
+			break;
+		case RECOGNIZER_HEADER_MULTIPLE_MODE:
+			apt_boolean_value_parse(value,&recog_header->multiple_mode);
 			break;
 		default:
 			status = FALSE;
@@ -532,6 +537,9 @@ static apt_bool_t mrcp_recog_header_generate(const mrcp_recog_header_t *recog_he
 			break;
 		case RECOGNIZER_HEADER_ABORT_PHRASE_ENROLLMENT:
 			apt_boolean_value_generate(recog_header->abort_phrase_enrollment,value,pool);
+			break;
+		case RECOGNIZER_HEADER_MULTIPLE_MODE:
+			apt_boolean_value_generate(recog_header->multiple_mode,value,pool);
 			break;
 		default:
 			break;
@@ -733,6 +741,9 @@ static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, 
 			break;
 		case RECOGNIZER_HEADER_ABORT_PHRASE_ENROLLMENT:
 			recog_header->abort_phrase_enrollment = src_recog_header->abort_phrase_enrollment;
+			break;
+		case RECOGNIZER_HEADER_MULTIPLE_MODE:
+			recog_header->multiple_mode = src_recog_header->multiple_mode;
 			break;
 		default:
 			status = FALSE;

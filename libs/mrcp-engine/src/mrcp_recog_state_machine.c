@@ -330,6 +330,22 @@ static apt_bool_t recog_event_start_of_input(mrcp_recog_state_machine_t *state_m
 	return recog_event_dispatch(state_machine,message);
 }
 
+static apt_bool_t recog_event_recognition_notify(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
+{
+	if(!state_machine->recog) {
+		/* unexpected event, no in-progress recognition request */
+		return FALSE;
+	}
+
+	if(state_machine->recog->start_line.request_id != message->start_line.request_id) {
+		/* unexpected event */
+		return FALSE;
+	}
+	
+	message->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
+	return recog_event_dispatch(state_machine,message);
+}
+
 static apt_bool_t recog_event_recognition_complete(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
 	mrcp_message_t *pending_request;
@@ -409,7 +425,8 @@ static recog_method_f recog_response_method_array[RECOGNIZER_METHOD_COUNT] = {
 static recog_method_f recog_event_method_array[RECOGNIZER_EVENT_COUNT] = {
 	recog_event_start_of_input,
 	recog_event_recognition_complete,
-	recog_event_interpretation_complete
+	recog_event_interpretation_complete,
+	recog_event_recognition_notify
 };
 
 /** Update state according to received incoming request from MRCP client */

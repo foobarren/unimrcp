@@ -76,6 +76,7 @@ typedef enum {
 	RECOGNIZER_HEADER_NEW_PHRASE_ID,
 	RECOGNIZER_HEADER_CONFUSABLE_PHRASES_URI,
 	RECOGNIZER_HEADER_ABORT_PHRASE_ENROLLMENT,
+	RECOGNIZER_HEADER_MULTIPLE_MODE,
 
 	RECOGNIZER_HEADER_COUNT
 } mrcp_recognizer_header_id;
@@ -257,6 +258,9 @@ struct mrcp_recog_header_t {
 	method to abort the phrase enrollment, rather than committing the
 	phrase to the personal grammar */
 	apt_bool_t                    abort_phrase_enrollment;
+
+	/*值为true,即认为MRCP Client请求的是连续识别*/
+	apt_bool_t                    multiple_mode;
 };
 
 

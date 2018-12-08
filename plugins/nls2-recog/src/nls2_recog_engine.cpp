@@ -26,6 +26,24 @@
  *   (asynchronous response can be sent from the context of other thread)
  * 5. Methods (callbacks) of the MPF engine stream MUST not block.
  */
+
+/*
+ * Demo recognizer scenario.
+ * C -> S: SIP INVITE or RTPS SETUP   (add recognizer channel)
+ * S -> C: SIP OK or RTPS OK
+ * C -> S: MRCP RECOGNIZE
+ * S -> C: MRCP IN-PROGRESS
+ * C -> S: RTP Start Transmission
+ * S -> C: MRCP START-OF-INPUT
+ * S -> C: MRCP RECOGNITION-NOTIFY
+ * S -> C: MRCP RECOGNITION-COMPLETE
+ * C -> S: RTP Stop Transmission
+ * C -> S: SIP INVITE or RTPS SETUP   (optionally remove recognizer channel)
+ * S -> C: SIP OK or RTPS OK
+ * C -> S: SIP BYE or RTPS TEARDOWN
+ * S -> C: SIP OK or RTPS OK
+ */
+
 #include <stdlib.h>
 #include "mpf_buffer.h"
 #include "apt_log.h"
@@ -358,7 +376,7 @@ static apt_bool_t nls2_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 		return FALSE;
 	}	
 	/* get recognizer header */
-	// recog_header = (mrcp_recog_header_t*)mrcp_resource_header_get(request);
+	recog_header = (mrcp_recog_header_t*)mrcp_resource_header_get(request);
 
 	if(!recog_channel->audio_out) {
 		const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
@@ -376,8 +394,14 @@ static apt_bool_t nls2_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 	}
 
 	recog_channel->recog_request = request;
-	recog_channel->cbParam.pfnOnNotify = nls2_recog_on_speechrecognizer_notify;
-	recog_channel->asr_session	=	Nls2ASR::OpenASRSession();
+	if(recog_header->multiple_mode == FALSE){
+		recog_channel->cbParam.pfnOnNotify = nls2_recog_on_speechrecognizer_notify;
+		recog_channel->asr_session	=	Nls2ASR::OpenASRSession();
+	}else{
+		recog_channel->cbParam.pfnOnNotify = nls2_recog_on_speechtranscriber_notify;
+		recog_channel->asr_session	=	Nls2ASR::OpenASRSession(1);
+	}
+
 	if (recog_channel->asr_session == NULL)
 	{
 		apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"Failed to open Nls2ASR session " APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
@@ -681,6 +705,29 @@ static apt_bool_t nls2_recog_recognition_complete(nls2_recog_channel_t *recog_ch
 	return mrcp_engine_channel_message_send(recog_channel->channel,message);
 }
 
+/* Raise nls RECOGNIZER_RECOGNITION_NOTIFYevent */
+static apt_bool_t nls2_recog_recognition_notify(nls2_recog_channel_t *recog_channel,NlsEvent* cbEvent )
+{
+	mrcp_recog_header_t *recog_header;
+	/* create RECOGNIZER_RECOGNITION_NOTIFY event */
+	mrcp_message_t *message = mrcp_event_create(
+						recog_channel->recog_request,
+						RECOGNIZER_RECOGNITION_NOTIFY,
+						recog_channel->recog_request->pool);
+	if(!message) {
+		return FALSE;
+	}
+
+	/* get/allocate recognizer header */
+	recog_header = (mrcp_recog_header_t*)mrcp_resource_header_prepare(message);
+
+	/* set request state */
+	message->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
+	nls2_recog_result_load(recog_channel,message,cbEvent);
+
+	/* send asynch event */
+	return mrcp_engine_channel_message_send(recog_channel->channel,message);
+}
 
 static int32_t	nls2_recog_on_speechrecognizer_notify(NlsEvent* cbEvent, void* pvContext)
 {
@@ -755,6 +802,7 @@ static int32_t	nls2_recog_on_speechtranscriber_notify(NlsEvent* cbEvent, void* p
 			if(recog_channel->recog_request){
 				apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onTranscriptionStarted, event(\"begin-speaking\") should be emitted " APT_SIDRES_FMT,
 					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+				nls2_recog_start_of_input(recog_channel);
 			}
 			break;
 		}
@@ -763,8 +811,8 @@ static int32_t	nls2_recog_on_speechtranscriber_notify(NlsEvent* cbEvent, void* p
 			if(recog_channel->recog_request){
 				apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onTranscriptionResultChanged, event(\"speech-detected\") should be emitted " APT_SIDRES_FMT,
 					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
+				nls2_recog_recognition_notify(recog_channel,cbEvent);
 			}
-			// nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
 			break;
 		}
 	case NlsEvent::TranscriptionCompleted:
@@ -772,7 +820,7 @@ static int32_t	nls2_recog_on_speechtranscriber_notify(NlsEvent* cbEvent, void* p
 			if(recog_channel->recog_request){
 				apt_log(RECOG_LOG_MARK,APT_PRIO_WARNING,"onTranscriptionCompleted " APT_SIDRES_FMT,
 					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-				nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
+				nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
 			}
 			break;
 		}
@@ -781,11 +829,8 @@ static int32_t	nls2_recog_on_speechtranscriber_notify(NlsEvent* cbEvent, void* p
 			if(recog_channel->recog_request){
 				apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onSentenceBegin " APT_SIDRES_FMT,
 					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-				nls2_recog_start_of_input(recog_channel);
+			// 	nls2_recog_recognition_notify(recog_channel,cbEvent);
 			}
-			// if(recog_channel->timers_started == TRUE) {
-			// 	nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_ERROR);
-			// }
 			break;
 		}
 	case NlsEvent::SentenceEnd:
@@ -793,8 +838,7 @@ static int32_t	nls2_recog_on_speechtranscriber_notify(NlsEvent* cbEvent, void* p
 			if(recog_channel->recog_request){
 				apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"onSentenceEnd " APT_SIDRES_FMT,
 					MRCP_MESSAGE_SIDRES(recog_channel->recog_request));
-
-				nls2_recog_recognition_complete(recog_channel,cbEvent,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
+				nls2_recog_recognition_notify(recog_channel,cbEvent);
 			}
 			break;
 		}
