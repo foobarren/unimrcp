@@ -324,6 +324,11 @@ static apt_bool_t recog_application_on_message_receive(mrcp_application_t *appli
 		}
 		else if(message->start_line.method_id == RECOGNIZER_START_OF_INPUT) {
 			/* received start-of-input, do whatever you need here */
+		}else if(message->start_line.method_id == RECOGNIZER_RECOGNITION_NOTIFY) {
+			nlsml_result_t *result = nlsml_result_parse(message->body.buf, message->body.length, message->pool);
+			if(result) {
+				nlsml_result_trace(result, message->pool);
+			}
 		}
 	}
 	return TRUE;

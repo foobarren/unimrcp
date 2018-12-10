@@ -288,6 +288,10 @@ bool RecogSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_message_t
 		else if(pMrcpMessage->start_line.method_id == RECOGNIZER_START_OF_INPUT) 
 		{
 			/* received start-of-input, do whatever you need here */
+		}else if(pMrcpMessage->start_line.method_id == RECOGNIZER_RECOGNITION_NOTIFY) 
+		{
+			/* received start-of-input, do whatever you need here */
+			ParseNLSMLResult(pMrcpMessage);
 		}
 	}
 	return true;

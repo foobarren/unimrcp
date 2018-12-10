@@ -635,6 +635,12 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 		apr_thread_mutex_unlock(asr_session->mutex);
 
 		mrcp_message = mrcp_event_get(app_message);
+		if(mrcp_message && mrcp_message->start_line.method_id == RECOGNIZER_RECOGNITION_NOTIFY) {
+			const char* result = nlsml_result_get(mrcp_message);
+			if(result) {
+				printf("Recog Result [%s]",result);
+			}
+		}
 		if(mrcp_message && mrcp_message->start_line.method_id == RECOGNIZER_RECOGNITION_COMPLETE) {
 			asr_session->recog_complete = mrcp_message;
 		}
@@ -716,6 +722,13 @@ ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
 		apr_thread_mutex_unlock(asr_session->mutex);
 
 		mrcp_message = mrcp_event_get(app_message);
+
+		if(mrcp_message && mrcp_message->start_line.method_id == RECOGNIZER_RECOGNITION_NOTIFY) {
+			const char* result = nlsml_result_get(mrcp_message);
+			if(result) {
+				printf("Recog Result [%s]",result);
+			}
+		}
 		if(mrcp_message && mrcp_message->start_line.method_id == RECOGNIZER_RECOGNITION_COMPLETE) {
 			asr_session->recog_complete = mrcp_message;
 		}
