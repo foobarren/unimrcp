@@ -638,7 +638,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 		if(mrcp_message && mrcp_message->start_line.method_id == RECOGNIZER_RECOGNITION_NOTIFY) {
 			const char* result = nlsml_result_get(mrcp_message);
 			if(result) {
-				printf("Recog Result [%s]",result);
+				printf("Recog Notify [%s]",result);
 			}
 		}
 		if(mrcp_message && mrcp_message->start_line.method_id == RECOGNIZER_RECOGNITION_COMPLETE) {
@@ -726,7 +726,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
 		if(mrcp_message && mrcp_message->start_line.method_id == RECOGNIZER_RECOGNITION_NOTIFY) {
 			const char* result = nlsml_result_get(mrcp_message);
 			if(result) {
-				printf("Recog Result [%s]",result);
+				printf("Recog Notify [%s]",result);
 			}
 		}
 		if(mrcp_message && mrcp_message->start_line.method_id == RECOGNIZER_RECOGNITION_COMPLETE) {
