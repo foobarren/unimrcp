@@ -44,7 +44,15 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 	asr_params_t *params = data;
 	asr_session_t *session = asr_session_create(params->engine,params->profile);
 	if(session) {
-		const char *result = asr_session_file_recognize(session,params->grammar_file,params->input_file);
+		const char *result = NULL;
+		if(strcasecmp(params->input_file,"stream") == 0) {
+			result = asr_session_stream_recognize(session,params->grammar_file);
+		}else if(strcasecmp(params->input_file,"long") == 0) {
+			result = asr_session_file_recognize(session,params->grammar_file,"one-8kHz.pcm",ASR_MODE_LONG);
+		}else{
+			result = asr_session_file_recognize(session,params->grammar_file,params->input_file,ASR_MODE_SHORT);
+		}
+
 		if(result) {
 			printf("Recog Result [%s]",result);
 		}
@@ -133,6 +141,8 @@ static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 			"           run\n"
 			"           run grammar.xml one.pcm\n"
 			"           run grammar.xml one.pcm uni1\n"
+			"           run grammar.xml long\n"
+			"           run grammar.xml stream\n"
 		    "\n- loglevel [level] (set loglevel, one of 0,1...7)\n"
 		    "\n- quit, exit\n");
 	}

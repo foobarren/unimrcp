@@ -47,6 +47,10 @@ typedef struct asr_engine_t asr_engine_t;
 /** Opaque ASR session */
 typedef struct asr_session_t asr_session_t;
 
+typedef enum {
+	ASR_MODE_SHORT,
+	ASR_MODE_LONG
+} asr_mode_e;
 
 /**
  * Create ASR engine.
@@ -84,7 +88,7 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 									asr_session_t *session, 
 									const char *grammar_file, 
-									const char *input_file);
+									const char *input_file,asr_mode_e asrmode);
 
 /**
  * Initiate recognition based on specified grammar and input stream.

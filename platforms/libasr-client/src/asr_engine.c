@@ -37,6 +37,7 @@
 
 #include "asr_engine.h"
 
+
 typedef enum {
 	INPUT_MODE_NONE,
 	INPUT_MODE_FILE,
@@ -346,7 +347,7 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session,
 }
 
 /** Create RECOGNIZE request */
-static mrcp_message_t* recognize_message_create(asr_session_t *asr_session)
+static mrcp_message_t* recognize_message_create(asr_session_t *asr_session,asr_mode_e asrmode)
 {
 	/* create MRCP message */
 	mrcp_message_t *mrcp_message = mrcp_application_message_create(
@@ -373,20 +374,32 @@ static mrcp_message_t* recognize_message_create(asr_session_t *asr_session)
 				recog_header->cancel_if_queue = FALSE;
 				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_CANCEL_IF_QUEUE);
 			}
-			recog_header->no_input_timeout = 5000;
-			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT);
-			recog_header->recognition_timeout = 20000;
-			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_RECOGNITION_TIMEOUT);
-			recog_header->speech_complete_timeout = 400;
-			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT);
-			recog_header->dtmf_term_timeout = 3000;
-			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_DTMF_TERM_TIMEOUT);
-			recog_header->dtmf_interdigit_timeout = 3000;
-			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_DTMF_INTERDIGIT_TIMEOUT);
-			recog_header->confidence_threshold = 0.5f;
-			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD);
-			recog_header->start_input_timers = TRUE;
-			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_START_INPUT_TIMERS);
+			if(asrmode == ASR_MODE_SHORT){
+				recog_header->no_input_timeout = 5000;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT);
+				recog_header->recognition_timeout = 20000;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_RECOGNITION_TIMEOUT);
+				recog_header->speech_complete_timeout = 400;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT);
+				recog_header->dtmf_term_timeout = 3000;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_DTMF_TERM_TIMEOUT);
+				recog_header->dtmf_interdigit_timeout = 3000;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_DTMF_INTERDIGIT_TIMEOUT);
+				recog_header->confidence_threshold = 0.5f;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD);
+				recog_header->start_input_timers = TRUE;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_START_INPUT_TIMERS);
+			}else{
+				recog_header->multiple_mode = TRUE;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_MULTIPLE_MODE);
+				recog_header->speech_complete_timeout = 1000;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT);
+				recog_header->confidence_threshold = 0.5f;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD);
+				recog_header->start_input_timers = TRUE;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_START_INPUT_TIMERS);
+			}
+
 		}
 	}
 	return mrcp_message;
@@ -567,7 +580,8 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 									asr_session_t *asr_session, 
 									const char *grammar_file, 
-									const char *input_file)
+									const char *input_file,
+									asr_mode_e asrmode)
 {
 	const mrcp_app_message_t *app_message;
 	mrcp_message_t *mrcp_message;
@@ -596,7 +610,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 	asr_session->recog_complete = NULL;
 
 	app_message = NULL;
-	mrcp_message = recognize_message_create(asr_session);
+	mrcp_message = recognize_message_create(asr_session,asrmode);
 	if(!mrcp_message) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RECOGNIZE Request");
 		return NULL;
@@ -683,7 +697,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
 	asr_session->recog_complete = NULL;
 
 	app_message = NULL;
-	mrcp_message = recognize_message_create(asr_session);
+	mrcp_message = recognize_message_create(asr_session,ASR_MODE_LONG);
 	if(!mrcp_message) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RECOGNIZE Request");
 		return NULL;
