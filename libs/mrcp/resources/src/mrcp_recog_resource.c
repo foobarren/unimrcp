@@ -57,7 +57,7 @@ static const apt_str_table_item_t v1_recog_event_string_table[] = {
 	{{"START-OF-SPEECH",          15},0},
 	{{"RECOGNITION-COMPLETE",     20},0},
 	{{"INTERPRETATION-COMPLETE",  23},0},
-	{{"RECOGNITION-NOTIFY",  	  21},0}
+	{{"RECOGNITION-NOTIFY",  	  18},0}
 };
 
 /** String table of MRCPv2 recognizer events (mrcp_recognizer_event_id) */
@@ -65,7 +65,7 @@ static const apt_str_table_item_t v2_recog_event_string_table[] = {
 	{{"START-OF-INPUT",           14},0},
 	{{"RECOGNITION-COMPLETE",     20},0},
 	{{"INTERPRETATION-COMPLETE",  23},0},
-	{{"RECOGNITION-NOTIFY",  	  21},0}
+	{{"RECOGNITION-NOTIFY",  	  18},0}
 };
 
 
